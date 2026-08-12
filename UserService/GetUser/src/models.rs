@@ -1,0 +1,27 @@
+use uuid::Uuid;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RequestBody {
+    pub username: String,
+    pub password: String,
+    pub email: String
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ResponseBody {
+    pub auth_token: String
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct User {
+    pub id: Uuid,
+    pub username: String,
+    pub password: String,
+    pub email: String,
+    pub has_basic_plan: bool
+}
+
+pub struct VerificationClaims {
+    
+}
