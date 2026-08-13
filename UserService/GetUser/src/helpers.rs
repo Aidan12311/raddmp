@@ -1,8 +1,7 @@
-use lambda_http::{Body, Error, Response};
+use lambda_http::{Body, Error, Response, Request};
 use aws_config::{BehaviorVersion, Region};
 use aws_sdk_dynamodb::Client;
 use serde::Serialize;
-use sha2::{Digest, Sha256};
 
 pub async fn create_client() -> Client {
     let config = aws_config::defaults(BehaviorVersion::latest())
@@ -29,10 +28,11 @@ pub fn json_response<T: Serialize>(value: &T, status_code: u16,) -> Result<Respo
         .map_err(Box::new)?)
 }
 
-pub fn hash(password: &String) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(password.as_bytes());
-    let result = hasher.finalize();
-
-    hex::encode_upper(result)
-}
+pub fn extract_token_from_cookie(event: &Request) -> Option<String> {
+    let cookie_header = event.headers().get("cookie")?.to_str().ok()?;
+    cookie_header
+        .split(';')
+        .map(|kv| kv.trim())
+        .find_map(|kv| kv.strip_prefix("auth_token="))
+        .map(|v| v.to_string())
+}  

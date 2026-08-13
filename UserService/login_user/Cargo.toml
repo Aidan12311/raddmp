@@ -1,5 +1,5 @@
 [package]
-name = "GetUser"
+name = "login_user"
 version = "0.1.0"
 edition = "2021"
 

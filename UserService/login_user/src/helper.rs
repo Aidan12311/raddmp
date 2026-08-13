@@ -3,7 +3,7 @@ use aws_config::{BehaviorVersion, Region};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use jsonwebtoken::{encode, Header, EncodingKey, Algorithm};
-use chrono::{Utc};
+use chrono::{Utc, Duration};
 use crate::models::{Claims, User};
 
 

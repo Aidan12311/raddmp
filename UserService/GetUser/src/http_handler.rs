@@ -1,35 +1,42 @@
-use lambda_http::{Body, Error, Request, RequestPayloadExt, Response};
-use crate::helpers::{create_client, text_response, hash};
-use crate::models::{RequestBody, ResponseBody, User};
+use lambda_http::{Body, Error, Request, Response};
+use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
+use crate::models::{Claims, User};
+use crate::helpers::{create_client, text_response, json_response, extract_token_from_cookie};
 use aws_sdk_dynamodb::types::AttributeValue;
-use uuid::Uuid;
-use fancy_regex::Regex;
+use serde_dynamo::aws_sdk_dynamodb_1::from_item;
 
-
-//take in a username as password
-//check is request body is empty
-//if no check if username is in database
-//if yes hash password in request body
-//compare hashes
-//if hashs equal return auth token
 pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
-    let req = match event.payload::<RequestBody>() {
-        Ok(Some(req)) => req,
-        Ok(None) => return text_response("Request body empty", 400),
-        Err(err) => {
-            println!("{err}");
-            return text_response("internal server error", 500)
-        },
+    //check if request contains an auth token
+    let token = match extract_token_from_cookie(&event) {
+        Some(t) => t,
+        None => return text_response("Missing auth token", 401),
     };
 
-    let client = create_client().await;
-    //TODO fix the table name
-    let result = client.get_item().table_name("UsersTable")
-        .key("username", AttributeValue::S(req.username.into())).send().await?;
-    
-    if let Some(user) = result.item {
-        
-    }
+    //decode auth token 
+    //todo i probably want to make this a function
+    let claims = match decode::<Claims>(
+        &token,
+        &DecodingKey::from_secret("UserAuthSecret".as_bytes()), // TODO: env var
+        &Validation::new(Algorithm::HS256),
+    ) {
+        Ok(data) => data.claims,
+        Err(err) => {
+            println!("{err}");
+            return text_response("Invalid auth token", 401);
+        }
+    };
 
-    todo!()
-}
+    //create client and query database using the user id
+    let client = create_client().await;
+    let result = client.get_item().table_name("UsersTable")
+        .key("id", AttributeValue::S(claims.sub.into())).send().await?;
+
+    //check if query returned an item
+    if let Some(item) = result.item {
+        //return the user if it did
+        let user: User = from_item(item)?;
+        return Ok(json_response(&user, 200)?)
+    }
+    
+    Ok(text_response("User not found please check the id and try again", 404)?)
+} 
