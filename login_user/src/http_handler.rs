@@ -1,7 +1,7 @@
 use lambda_http::{Body, Error, Request, RequestPayloadExt, Response};
-use crate::helpers::{create_dynamo_client, create_jwt, hash, json_response, text_response};
+use crate::helpers::{create_dynamo_client, create_jwt, hash, text_response};
 use crate::models::{RequestBody, User};
-use lambda_http::http::header::{HeaderMap, HeaderValue, SET_COOKIE};
+use lambda_http::http::header::{HeaderValue, SET_COOKIE};
 use aws_sdk_dynamodb::types::AttributeValue;
 use serde_dynamo::from_item;
 

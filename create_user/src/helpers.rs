@@ -31,14 +31,6 @@ pub fn text_response(message: &str, status_code: u16) -> Result<Response<Body>, 
         .map_err(Box::new)?)
 }
 
-pub fn json_response<T: Serialize>(value: &T, status_code: u16,) -> Result<Response<Body>, Error> {
-    Ok(Response::builder()
-        .status(status_code)
-        .header("content-type", "application/json")
-        .body(serde_json::to_string(value)?.into())
-        .map_err(Box::new)?)
-}
-
 pub fn hash(password: &String) -> String {
     let mut hasher = Sha256::new();
     hasher.update(password.as_bytes());

@@ -9,11 +9,6 @@ pub struct RequestBody {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ResponseBody {
-    pub auth_token: String
-}
-
-#[derive(Debug, Deserialize, Serialize)]
 pub struct User {
     pub id: Uuid,
     pub username: String,

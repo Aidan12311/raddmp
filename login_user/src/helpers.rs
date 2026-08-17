@@ -1,6 +1,5 @@
 use lambda_http::{Body, Error, Response};
 use aws_config::{BehaviorVersion, Region};
-use serde::Serialize;
 use sha2::{Digest, Sha256};
 use jsonwebtoken::{encode, Header, EncodingKey, Algorithm};
 use chrono::{Utc};
@@ -20,14 +19,6 @@ pub fn text_response(message: &str, status_code: u16) -> Result<Response<Body>, 
         .status(status_code)
         .header("content-type", "text/html")
         .body(message.into())
-        .map_err(Box::new)?)
-}
-
-pub fn json_response<T: Serialize>(value: &T, status_code: u16,) -> Result<Response<Body>, Error> {
-    Ok(Response::builder()
-        .status(status_code)
-        .header("content-type", "application/json")
-        .body(serde_json::to_string(value)?.into())
         .map_err(Box::new)?)
 }
 

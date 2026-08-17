@@ -1,7 +1,7 @@
 use lambda_http::{Body, Error, Request, RequestPayloadExt, Response};
-use lambda_http::http::header::{HeaderMap, HeaderValue, SET_COOKIE};
-use crate::helpers::{create_dynamo_client, create_jwt, create_sqs_client, hash, json_response, text_response};
-use crate::models::{RequestBody, ResponseBody, User};
+use lambda_http::http::header::{HeaderValue, SET_COOKIE};
+use crate::helpers::{create_dynamo_client, create_jwt, create_sqs_client, hash, text_response};
+use crate::models::{RequestBody, User};
 use aws_sdk_dynamodb::types::AttributeValue;
 use uuid::Uuid;
 use fancy_regex::Regex;
