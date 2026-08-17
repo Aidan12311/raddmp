@@ -6,7 +6,7 @@ use uuid::Uuid;
 use fancy_regex::Regex;
 
 pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
-    //check if the request body is empt
+    //check if the request body is empty
     let req = match event.payload::<RequestBody>() {
         Ok(Some(req)) => req,
         Ok(None) => return text_response("Request body empty", 400),

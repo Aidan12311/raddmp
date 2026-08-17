@@ -16,7 +16,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     //todo i probably want to make this a function
     let claims = match decode::<Claims>(
         &token,
-        &DecodingKey::from_secret("UserAuthSecret".as_bytes()), // TODO: env var
+        &DecodingKey::from_secret("JWT_SECRET".as_bytes()),
         &Validation::new(Algorithm::HS256),
     ) {
         Ok(data) => data.claims,
