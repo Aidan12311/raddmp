@@ -76,9 +76,12 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref UserTable
+          QUEUE_URL: !Ref AuthQueue
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref UserTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AuthQueue.QueueName
       Events:
         CreateUser:
           Type: Api

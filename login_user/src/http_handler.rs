@@ -41,9 +41,10 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     }
 
     let auth_token = create_jwt(&user, "JWT_SECRET")?;
+    let cookie_value = format!("auth_token={}; HttpOnly; Secure; SameSite=Strict; Path=/", auth_token);
     let response = Response::builder()
         .status(200)
-        .header(SET_COOKIE, HeaderValue::from_str(&auth_token)?)
+        .header(SET_COOKIE, HeaderValue::from_str(&cookie_value)?)
         .body(Body::from("logged in"))?;
 
     Ok(response)

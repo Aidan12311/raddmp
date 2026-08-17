@@ -7,21 +7,14 @@ use crate::models::{Claims, User};
 
 
 pub async fn create_dynamo_client() -> aws_sdk_dynamodb::Client {
-    let config = aws_config::defaults(BehaviorVersion::latest())
-        .region(Region::new("us-east-1"))
-        .load()
-        .await;
+    let config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
     aws_sdk_dynamodb::Client::new(&config)
 }
 
 pub async fn create_sqs_client() -> aws_sdk_sqs::Client {
-    let config = aws_config::defaults(BehaviorVersion::latest())
-        .region(Region::new("us-east-1"))
-        .load()
-        .await;
+    let config = aws_config::load_defaults(BehaviorVersion::latest()).await;
     aws_sdk_sqs::Client::new(&config)
 }
-
 pub fn text_response(message: &str, status_code: u16) -> Result<Response<Body>, Error> {
     Ok(Response::builder()
         .status(status_code)
