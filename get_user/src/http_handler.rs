@@ -28,7 +28,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
 
     //create client and query database using the user id
     let client = create_client().await;
-    let result = client.get_item().table_name("UsersTable")
+    let result = client.get_item().table_name("RaddUsersTable")
         .key("id", AttributeValue::S(claims.sub.into())).send().await?;
 
     //check if query returned an item

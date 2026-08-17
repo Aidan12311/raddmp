@@ -1,4 +1,5 @@
 use lambda_http::{Body, Error, Request, RequestPayloadExt, Response};
+use lambda_http::http::header::{HeaderMap, HeaderValue, SET_COOKIE};
 use crate::helpers::{create_dynamo_client, create_jwt, create_sqs_client, hash, json_response, text_response};
 use crate::models::{RequestBody, ResponseBody, User};
 use aws_sdk_dynamodb::types::AttributeValue;
@@ -41,7 +42,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     //TODO fix the table name
     let _result = client
         .put_item()
-        .table_name("UsersTable")
+        .table_name("RaddUsersTable")
         .item("id", AttributeValue::S(user.id.to_string()))
         .item("name", AttributeValue::S(user.username.clone()))
         .item("phone", AttributeValue::S(user.password.clone()))
@@ -56,6 +57,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     let verification_token = create_jwt(&user, "ThisIsTheSecret")?;
     //genreate sqs client and send message to queue
     let client = create_sqs_client().await;
+    //TODO i need to swap the url because im using same now
     let _result = client.send_message().queue_url("https://sqs.us-east-1.amazonaws.com/242827408047/RADDVerificationQueue")
         .message_body(verification_token).send().await;
 
@@ -64,7 +66,13 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     //SECRET = JWT_SECRET
     //TODO Make the secret an environemnt variable
     let auth_token = create_jwt(&user, "JWT_SECRET")?;
-    json_response(&ResponseBody{auth_token}, 201)
+    // json_response(&ResponseBody{auth_token}, 201)
+    let response = Response::builder()
+        .status(200)
+        .header(SET_COOKIE, HeaderValue::from_str(&auth_token)?)
+        .body(Body::from("logged in"))?;
+
+    Ok(response)
 }
 
 fn is_valid_field(field: &str, pattern: Regex) -> bool {

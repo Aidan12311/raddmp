@@ -1,6 +1,7 @@
 use lambda_http::{Body, Error, Request, RequestPayloadExt, Response};
 use crate::helpers::{create_dynamo_client, create_jwt, hash, json_response, text_response};
 use crate::models::{RequestBody, User};
+use lambda_http::http::header::{HeaderMap, HeaderValue, SET_COOKIE};
 use aws_sdk_dynamodb::types::AttributeValue;
 use serde_dynamo::from_item;
 
@@ -39,6 +40,11 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         return text_response("invalid username or password", 401);
     }
 
-    let token = create_jwt(&user, "JWT_SECRET")?;
-    json_response(&token, 200)
+    let auth_token = create_jwt(&user, "JWT_SECRET")?;
+    let response = Response::builder()
+        .status(200)
+        .header(SET_COOKIE, HeaderValue::from_str(&auth_token)?)
+        .body(Body::from("logged in"))?;
+
+    Ok(response)
 }
