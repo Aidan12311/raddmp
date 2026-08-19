@@ -1,0 +1,20 @@
+[package]
+name = "login_user"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+aws-config = "1.10.1"
+aws-sdk-dynamodb = "1.119.0"
+lambda_http = "1.0.0"
+fancy-regex = "0.19"
+serde = "1.0.228"
+serde_json = "1.0.150"
+serde_dynamo = {version = "4.3.0", features = ["aws-sdk-dynamodb+1"] }
+sha2 = "0.11.0"
+tokio = { version = "1", features = ["macros"] }
+uuid = {version = "1.23.4", features = ["v4", "serde"]}
+hex = "0.4"
+jsonwebtoken = {version = "11.0.0", features = ["rust_crypto"]}
+chrono = "0.4"
+aws-sdk-sqs = "1.105.0"
