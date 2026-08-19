@@ -70,6 +70,40 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: AuthQueue
+  VerificationConsumer:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+      SamResourceId: VerificationConsumer
+    Properties:
+      CodeUri: VerificationConsumer
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: UserTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: UserTable
+      - SQSPollerPolicy:
+          QueueName:
+            Fn::GetAtt:
+            - AuthQueue
+            - QueueName
+      Events:
+        AuthQueueEvent:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::GetAtt:
+              - AuthQueue
+              - Arn
+            BatchSize: 10
+            Enabled: true
   UserTable:
     Type: AWS::DynamoDB::Table
     Properties:

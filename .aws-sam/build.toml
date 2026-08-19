@@ -45,4 +45,16 @@ manifest_hash = ""
 packagetype = "Zip"
 functions = ["AuthFunction"]
 
+[function_build_definitions.f0be3bc2-1a57-4b26-b75a-fc0dceba0663]
+codeuri = "C:\\Workspace\\RADDMP\\verification_consumer"
+runtime = "provided.al2023"
+architecture = "x86_64"
+handler = "bootstrap"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["VerificationConsumer"]
+
+[function_build_definitions.f0be3bc2-1a57-4b26-b75a-fc0dceba0663.metadata]
+BuildMethod = "rust-cargolambda"
+
 [layer_build_definitions]

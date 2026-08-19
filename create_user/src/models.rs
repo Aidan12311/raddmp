@@ -25,3 +25,9 @@ pub struct Claims {
     pub iat: usize,
     pub exp: usize,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct QueueMessage {
+    pub email: String,
+    pub auth_token: String
+}

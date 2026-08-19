@@ -1,7 +1,7 @@
 use lambda_http::{Body, Error, Request, RequestPayloadExt, Response};
 use lambda_http::http::header::{HeaderValue, SET_COOKIE};
 use crate::helpers::{create_dynamo_client, create_jwt, create_sqs_client, hash, text_response};
-use crate::models::{RequestBody, User};
+use crate::models::{RequestBody, User, QueueMessage};
 use aws_sdk_dynamodb::types::AttributeValue;
 use uuid::Uuid;
 use fancy_regex::Regex;
@@ -56,16 +56,20 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     //generate verification token
     //TODO i should probably make the secret an environment variable or something like that but idk who cares
     let verification_token = create_jwt(&user, "ThisIsTheSecret")?;
+    let message = QueueMessage{
+        email: user.email.clone(),
+        auth_token: verification_token,
+    };
+    let body = serde_json::to_string(&message).expect("serializable struct");
     //genreate sqs client and send message to queue
     let client = create_sqs_client().await;
-    //TODO i need to swap the url because im using same now
     let queue_url = std::env::var("QUEUE_URL")
         .map_err(|_| Error::from("QUEUE_URL environment variable not set"))?;
 
     let _result = client
         .send_message()
         .queue_url(queue_url)
-        .message_body(verification_token)
+        .message_body(body)
         .send()
         .await;
 
