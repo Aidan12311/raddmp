@@ -3,6 +3,11 @@ Transform: AWS::Serverless-2016-10-31
 Description: 'RADD sam deployment template
 
   '
+Parameters:
+  JwtSecret:
+    Type: String
+    NoEcho: true
+    Default: JWT_SECRET
 Globals:
   Function:
     Timeout: 3
@@ -35,6 +40,32 @@ Resources:
         AllowMethods: '''GET,POST,OPTIONS'''
         AllowHeaders: '''content-type'''
         AllowOrigin: '''*'''
+      Auth:
+        Authorizers:
+          RaddAuthorizer:
+            FunctionArn:
+              Fn::GetAtt:
+              - AuthFunction
+              - Arn
+            FunctionPayloadType: REQUEST
+            Identity:
+              Headers:
+              - Cookie
+              ReauthorizeEvery: 300
+  AuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: AuthFunction
+      Handler: login_auth.lambda_handler
+      Runtime: python3.13
+      Architectures:
+      - x86_64
+      Environment:
+        Variables:
+          JWT_SECRET:
+            Ref: JwtSecret
+    Metadata:
+      SamResourceId: AuthFunction
   AuthQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -120,6 +151,8 @@ Resources:
               Ref: RaddGateway
             Path: /users
             Method: GET
+            Auth:
+              Authorizer: RaddAuthorizer
   Login:
     Type: AWS::Serverless::Function
     Metadata:
@@ -135,6 +168,8 @@ Resources:
         Variables:
           TABLE_NAME:
             Ref: UserTable
+          JWT_SECRET:
+            Ref: JwtSecret
       Policies:
       - DynamoDBReadPolicy:
           TableName:

@@ -3,6 +3,12 @@ Transform: AWS::Serverless-2016-10-31
 Description: > 
   RADD sam deployment template
 
+Parameters:
+  JwtSecret:
+    Type: String
+    NoEcho: true
+    Default: JWT_SECRET
+
 Globals:
   Function:
     Timeout: 3
@@ -12,7 +18,7 @@ Globals:
       AllowMethods: "'GET,POST,OPTIONS'"
       AllowHeaders: "'content-type'"
       AllowOrigin: "'*'"
-
+ 
 Resources:
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
@@ -20,13 +26,13 @@ Resources:
       Name: !Sub "ApplicationInsights-SAM-${AWS::StackName}"
       ResourceQuery:
         Type: CLOUDFORMATION_STACK_1_0
-
+ 
   ApplicationInsightsMonitoring:
     Type: AWS::ApplicationInsights::Application
     Properties:
       ResourceGroupName: !Ref ApplicationResourceGroup
       AutoConfigurationEnabled: 'true'
-
+ 
   RaddGateway:
     Type: AWS::Serverless::Api
     Properties:
@@ -36,12 +42,33 @@ Resources:
         AllowMethods: "'GET,POST,OPTIONS'"
         AllowHeaders: "'content-type'"
         AllowOrigin: "'*'"
-
+      Auth:
+        Authorizers:
+          RaddAuthorizer:
+            FunctionArn: !GetAtt AuthFunction.Arn
+            FunctionPayloadType: REQUEST
+            Identity:
+              Headers:
+                - Cookie
+              ReauthorizeEvery: 300
+ 
+  AuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: auth/
+      Handler: login_auth.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          JWT_SECRET: !Ref JwtSecret
+ 
   AuthQueue:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: AuthQueue
-
+ 
   UserTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -62,7 +89,7 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-
+ 
   CreateUser:
     Type: AWS::Serverless::Function
     Metadata:
@@ -89,7 +116,7 @@ Resources:
             RestApiId: !Ref RaddGateway
             Path: /users
             Method: POST
-
+ 
   GetUser:
     Type: AWS::Serverless::Function
     Metadata:
@@ -113,7 +140,9 @@ Resources:
             RestApiId: !Ref RaddGateway
             Path: /users
             Method: GET
-
+            Auth:
+              Authorizer: RaddAuthorizer
+ 
   Login:
     Type: AWS::Serverless::Function
     Metadata:
@@ -127,6 +156,7 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref UserTable
+          JWT_SECRET: !Ref JwtSecret
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref UserTable
@@ -137,28 +167,28 @@ Resources:
             RestApiId: !Ref RaddGateway
             Path: /login
             Method: POST
-
+ 
 Outputs:
   ApiUrl:
     Description: Base URL for the API
     Value: !Sub "https://${RaddGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
-
+ 
   UserTableName:
     Description: DynamoDB table name for users
     Value: !Ref UserTable
-
+ 
   AuthQueueUrl:
     Description: SQS queue URL for auth events
     Value: !Ref AuthQueue
-
+ 
   CreateUserFunctionArn:
     Description: Create User Lambda ARN
     Value: !GetAtt CreateUser.Arn
-
+ 
   GetUserFunctionArn:
     Description: Get User Lambda ARN
     Value: !GetAtt GetUser.Arn
-
+ 
   LoginFunctionArn:
     Description: Login Lambda ARN
     Value: !GetAtt Login.Arn

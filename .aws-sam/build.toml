@@ -36,4 +36,13 @@ functions = ["Login"]
 [function_build_definitions.2e234cb0-37ca-4145-a328-d12f704b12ee.metadata]
 BuildMethod = "rust-cargolambda"
 
+[function_build_definitions.139ba1ac-3d2b-4d02-99e1-39be05e5ced8]
+codeuri = "C:\\Workspace\\RADDMP\\auth"
+runtime = "python3.13"
+architecture = "x86_64"
+handler = "app.lambda_handler"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["AuthFunction"]
+
 [layer_build_definitions]
