@@ -5,7 +5,7 @@
    nothing wired. Flip PREVIEW to true only to eyeball the UI — it injects the
    fake rows below and skips the login screen. Ship with it false. */
 
-export const PREVIEW = false;
+export const PREVIEW = true;
 
 export const SAMPLE_TRACKS = [
   { id: "s1", title: "Neon Drift", artist: "Aurora Sync", dur: 214, g1: "#67e8f9", g2: "#3b82f6", streamUrl: null },

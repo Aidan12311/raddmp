@@ -8,8 +8,19 @@ import { PlayIcon, PauseIcon, QueueIcon } from "./ui";
 /* Fixed to the bottom, rendered by the persistent shell — so it keeps showing
    the current track no matter which route you're on. */
 export function PlayerBar() {
-  const { track, playing, elapsed, togglePlay, queue, openModal, expand, getAnalyser } = usePlayer();
-  if (!track) return null;
+  const { track, playing, elapsed, togglePlay, queue, openModal, expand, getAnalyser, seek } = usePlayer();
+  if (!track) {
+    return null;
+  }
+
+  const onScrub = (e) => {
+    const bar = e.currentTarget;
+    const rect = bar.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const newTime = (clickX / rect.width) * track.dur;
+    
+    seek(newTime);
+  }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 h-20 flex items-center gap-4 px-4 md:px-6" style={{ ...frost("rgba(16,16,20,0.72)"), borderTop: `1px solid ${C.line}`, zIndex: 20 }}>
@@ -22,7 +33,9 @@ export function PlayerBar() {
         <button onClick={togglePlay} className="w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2" style={{ background: "#fff" }}>{playing ? <PauseIcon s={18} /> : <PlayIcon s={18} />}</button>
         <div className="flex items-center gap-2 w-full max-w-md">
           <span className="text-[10px] font-mono" style={{ color: C.faint }}>{fmtTime(elapsed)}</span>
-          <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: C.line }}><div className="h-full rounded-full" style={{ width: `${(elapsed / track.dur) * 100}%`, background: `linear-gradient(90deg, ${C.a1}, ${C.a2})` }} /></div>
+          <div onClick={onScrub} className="flex-1 h-1 rounded-full overflow-hidden cursor-pointer" style={{ background: C.line }}>
+            <div className="h-full rounded-full" style={{ width: `${(elapsed / track.dur) * 100}%`, background: `linear-gradient(90deg, ${C.a1}, ${C.a2})` }} />
+          </div>
           <span className="text-[10px] font-mono" style={{ color: C.faint }}>{fmtTime(track.dur)}</span>
         </div>
       </div>

@@ -32,7 +32,6 @@ export function NowPlaying() {
           <div className="flex items-center gap-3 mt-4">
             <span className="text-[11px]" style={{ color: C.faint }}>Volume</span>
             <input type="range" min={0} max={1} step={0.01} value={vol} onChange={(e) => setVol(parseFloat(e.target.value))} className="radd-hrange flex-1" aria-label="Volume" />
-            <button onClick={shareLink} className="text-[12px] font-medium px-3 py-1.5 rounded-lg flex items-center gap-1.5 hover:bg-white/5 transition-colors" style={{ color: isPremium ? C.text : C.faint, border: `1px solid ${C.line}` }}>{!isPremium && <LockIcon />} Share live</button>
           </div>
         </div>
 
@@ -49,7 +48,6 @@ export function NowPlaying() {
               <Toggle label="Chorus" on={fx.chorus} onClick={() => toggleFx("chorus")} />
               <Toggle label={isPremium ? "Distortion" : "Distortion — Premium"} on={fx.distortion} onClick={() => isPremium && toggleFx("distortion")} locked={!isPremium} />
             </div>
-            <p className="text-[11px] mt-3 leading-relaxed" style={{ color: C.faint }}>EQ + effects are UI state only — send these values to your real-time DSP service.</p>
           </div>
         </div>
       </div>

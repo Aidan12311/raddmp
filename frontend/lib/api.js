@@ -67,3 +67,5 @@ export const addTrackToPlaylist = (playlistId, trackId) => request(`/playlists/$
 export const removeTrackFromPlaylist = (playlistId, trackId) => request(`/playlists/${playlistId}/tracks/${trackId}`, { method: "DELETE" });
 
 export const createListeningLink = (trackId) => request("/sessions", { method: "POST", body: JSON.stringify({ trackId }) });
+
+export const getStreamUrl = (id) => request(`/tracks/${id}/stream-url`);

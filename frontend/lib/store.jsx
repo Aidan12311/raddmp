@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
+
+import * as api from "./api";
 import { useAnalyser } from "./audio";
 import { PREVIEW, SAMPLE_TRACKS, SAMPLE_PLAYLISTS } from "./sample";
-import * as api from "./api";
 
 /* ════════════════════════════════════════════════════════════════════════════
    The app store (client).
@@ -25,7 +26,7 @@ export const usePlayer = () => useContext(PlayerContext);
 
 export function PlayerProvider({ children }) {
   const [authed, setAuthed] = useState(PREVIEW);
-  const [plan, setPlan] = useState("basic");
+  const [plan, setPlan] = useState("premium");
   const [library, setLibrary] = useState(PREVIEW ? SAMPLE_TRACKS : []);
   const [playlists, setPlaylists] = useState(PREVIEW ? SAMPLE_PLAYLISTS : []);
   const [loading, setLoading] = useState(!PREVIEW);
@@ -44,36 +45,80 @@ export function PlayerProvider({ children }) {
   const [toast, setToast] = useState(null);
   const notify = (m) => { setToast(m); setTimeout(() => setToast(null), 2600); };
 
-  const { audioRef, resume, getAnalyser } = useAnalyser();
+  const eqRef = useRef(eq);
+  useEffect(() => { eqRef.current = eq; }, [eq]);
+  const { audioRef, resume, getAnalyser, setBandGain, setEffect } = useAnalyser(() => eqRef.current);
   const isPremium = plan === "premium";
   const track = library.find((t) => t.id === current) || null;
 
   /* ── INITIAL DATA LOAD (client-side). Runs once, after first paint. ──────
      With no backend configured, api.* returns [] so the app just shows empty
      lists. Point NEXT_PUBLIC_API_BASE at your backend and this fills in. ── */
+  
   useEffect(() => {
     if (PREVIEW) { setLoading(false); return; }
     let alive = true;
+    
     (async () => {
       try {
         const [tracks, lists] = await Promise.all([api.listTracks(), api.listPlaylists()]);
-        if (!alive) return;
-        setLibrary(tracks);
+        if (!alive) {
+          return;
+        }
+
+        setLibrary(tracks);w
         setPlaylists(lists);
-      } finally {
-        if (alive) setLoading(false);
-      }
+      } 
+      finally {
+        if (alive) {
+          setLoading(false);
+        }
+      }  
     })();
+  
     return () => { alive = false; };
   }, []);
 
   useEffect(() => {
-    if (!playing || !track) return;
-    const id = setInterval(() => setElapsed((e) => (e + 1 > track.dur ? 0 : e + 1)), 1000);
-    return () => clearInterval(id);
-  }, [playing, track]);
-  useEffect(() => { if (audioRef.current) audioRef.current.volume = vol; }, [vol, audioRef]);
-  useEffect(() => { const c = () => setMenu(null); window.addEventListener("click", c); return () => window.removeEventListener("click", c); }, []);
+    const audioElement = audioRef.current;
+    if(!audioElement) {
+      return;
+    }
+
+    const currTime = () => setElapsed(audioElement.currentTime);
+    const onEnd = () => setPlaying(false);
+
+    audioElement.addEventListener("timeupdate", currTime);
+    audioElement.addEventListener("ended", onEnd);
+
+    return () => {
+      audioElement.removeEventListener("timeupdate", currTime);
+      audioElement.removeEventListener("ended", onEnd);
+    };
+  }, [audioRef]);
+
+  useEffect(() => { 
+    if (audioRef.current) {
+      audioRef.current.volume = vol; 
+    }
+  }, [vol, audioRef]);
+  
+  useEffect(() => { 
+    const c = () => setMenu(null); 
+    
+    window.addEventListener("click", c); 
+    return () => window.removeEventListener("click", c); }, 
+  []);
+
+  const seek = (seconds) => {
+    const audioElement = audioRef.current;
+    if (!audioElement) {
+      return;
+    }
+
+    audioElement.currentTime = seconds;
+    setElapsed(seconds);
+  };
 
   /* ═══ CONNECT THESE — inert stubs. Fill with lib/api.js calls. ═══════════ */
 
@@ -84,45 +129,105 @@ export function PlayerProvider({ children }) {
     // setPlan(user.plan); setAuthed(true);
   };
 
-  const playTrack = (id) => {
+  const playTrack = async (id) => {
     // TODO: const t = library.find((x) => x.id === id);
     //       audioRef.current.src = t.streamUrl; resume(); audioRef.current.play();
     //       setCurrent(id); setElapsed(0); setPlaying(true);
+
+    const track = library.find((track) => track.id === id);
+    if(!track) {
+      return;
+    }
+
+    if (id === current && audioRef.current.src) {
+      await resume();
+      await audioRef.current.play().catch(() => {});
+
+      setPlaying(true);
+
+      return;
+    }
+
+    // const { url } = await api.getStreamUrl(id);
+    // audioRef.current.src = url;
+
+    audioRef.current.src = "/test.mp3"
+
+    await resume();
+    await audioRef.current.play();
+
+    setCurrent(id);
+    setElapsed(0); 
+    setPlaying(true);
   };
-  const togglePlay = () => {
-    // TODO: playing ? audioRef.current.pause() : audioRef.current.play();
-    //       setPlaying(!playing);
+
+  const togglePlay = async () => {
+    const audioElement = audioRef.current;
+    if (!audioElement) {
+      return;
+    }
+
+    if(playing) {
+      audioElement.pause();
+      setPlaying(false);
+    } 
+    else {
+      await audioElement.play();
+      setPlaying(true);
+    }
   };
 
   const createPlaylist = async (name) => {
     // TODO: await api.createPlaylist(name); setPlaylists(await api.listPlaylists());
     setModal(null);
   };
+  
   const uploadTrack = async (data) => {
     // TODO: await api.uploadTrack(data); setLibrary(await api.listTracks());
     setModal(null);
   };
+
   const addToPlaylist = async (trackId, playlistId) => {
     // TODO: await api.addTrackToPlaylist(playlistId, trackId); setPlaylists(await api.listPlaylists());
   };
+  
   const removeFromPlaylist = async (trackId, playlistId) => {
     // TODO: await api.removeTrackFromPlaylist(playlistId, trackId); setPlaylists(await api.listPlaylists());
   };
   const addToQueue = (trackId) => { setQueue((q) => [...q, trackId]); };
+  
   const shareLink = async () => {
     // TODO: const { shareUrl } = await api.createListeningLink(current);
     //       navigator.clipboard.writeText(shareUrl); notify("Link copied");
   };
+
   const upgrade = () => { /* TODO: send the user to your checkout / upgrade flow */ };
 
-  const setEqBand = (i, v) => setEq((p) => p.map((x, xi) => (xi === i ? v : x))); // TODO: send to DSP
-  const resetEq = () => setEq([0, 0, 0, 0, 0]);
-  const toggleFx = (key) => setFx((f) => ({ ...f, [key]: !f[key] }));             // TODO: send to DSP
+  const setEqBand = (i, v) => {
+    setEq((p) => p.map((x, xi) => (xi === i ? v : x))); 
+    setBandGain(i, v);
+  };
+
+  const resetEq = () => {
+    setEq([0, 0, 0, 0, 0]);
+    for(let i = 0; i < 5; i++) {
+      setBandGain(i, 0);
+    }
+  }
+
+  const toggleFx = (key) => {
+    setFx((effect) => {
+      const newState = !effect[key];
+      setEffect(key, newState);
+
+      return { ...effect, [key]: newState };
+    })
+  };
 
 const value = {
     authed, plan, isPremium, loading,
     library, playlists, queue,
-    current, track, playing, elapsed,
+    current, track, playing, elapsed, seek,
     eq, fx, vol, setVol,
     modal, openModal: setModal, closeModal: () => setModal(null),
     menu, openMenu: (trackId, e) => { e.stopPropagation(); setMenu({ trackId, x: e.clientX, y: e.clientY }); }, closeMenu: () => setMenu(null),
