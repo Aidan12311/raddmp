@@ -10,7 +10,7 @@ import { Overlays } from "./Modals";
 import { AuthScreen } from "./AuthScreen";
 
 /* The persistent frame. It never unmounts as you navigate — only {children}
-   (the current route's page) swaps. That's why the player keeps playing across
+  (the current route's page) swaps. That's why the player keeps playing across
    pages: the <audio> element and player state live here, above the router. */
 export function AppShell({ children }) {
   const { authed, audioRef, getAnalyser, playing, track, expanded, toast } = usePlayer();

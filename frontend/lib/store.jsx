@@ -32,7 +32,7 @@ export function PlayerProvider({ children }) {
   const [loading, setLoading] = useState(!PREVIEW);
   const [queue, setQueue] = useState([]);
 
-  const [current, setCurrent] = useState(PREVIEW ? (SAMPLE_TRACKS[0]?.id ?? null) : null);
+  const [current, setCurrent] = useState(null);
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [eq, setEq] = useState([0, 0, 0, 0, 0]);
@@ -130,21 +130,19 @@ export function PlayerProvider({ children }) {
   };
 
   const playTrack = async (id) => {
-    // TODO: const t = library.find((x) => x.id === id);
-    //       audioRef.current.src = t.streamUrl; resume(); audioRef.current.play();
-    //       setCurrent(id); setElapsed(0); setPlaying(true);
-
     const track = library.find((track) => track.id === id);
     if(!track) {
       return;
     }
 
-    if (id === current && audioRef.current.src) {
+    const audioElement = audioRef.current;
+
+    const isLoaded = current === id && audioElement.src && audioElement.src !== window.location.href;
+    if (isLoaded) {
       await resume();
       await audioRef.current.play().catch(() => {});
 
       setPlaying(true);
-
       return;
     }
 
@@ -152,12 +150,12 @@ export function PlayerProvider({ children }) {
     // audioRef.current.src = url;
 
     audioRef.current.src = "/test.mp3"
+    setCurrent(id);
+    setElapsed(0);
 
     await resume();
-    await audioRef.current.play();
+    await audioElement.play().catch(() => {});
 
-    setCurrent(id);
-    setElapsed(0); 
     setPlaying(true);
   };
 

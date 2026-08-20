@@ -1543,38 +1543,6 @@ function PlayerBar() {
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "w-1/4 flex justify-end items-center gap-2",
                 children: [
-                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                        onClick: ()=>openModal({
-                                type: "queue"
-                            }),
-                        className: "flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-colors",
-                        style: {
-                            color: __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$theme$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["C"].sub,
-                            border: `1px solid ${__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$theme$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["C"].line}`
-                        },
-                        children: [
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$components$2f$ui$2e$jsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["QueueIcon"], {
-                                c: __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$theme$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["C"].sub
-                            }, void 0, false, {
-                                fileName: "[project]/components/PlayerBar.jsx",
-                                lineNumber: 44,
-                                columnNumber: 240
-                            }, this),
-                            " ",
-                            queue.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                className: "font-mono",
-                                children: queue.length
-                            }, void 0, false, {
-                                fileName: "[project]/components/PlayerBar.jsx",
-                                lineNumber: 44,
-                                columnNumber: 285
-                            }, this)
-                        ]
-                    }, void 0, true, {
-                        fileName: "[project]/components/PlayerBar.jsx",
-                        lineNumber: 44,
-                        columnNumber: 9
-                    }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "hidden lg:block w-20 h-8 rounded-md overflow-hidden",
                         style: {
@@ -2304,8 +2272,6 @@ __turbopack_context__.s([
     ()=>PlayIcon,
     "PlusIcon",
     ()=>PlusIcon,
-    "QueueIcon",
-    ()=>QueueIcon,
     "SearchIcon",
     ()=>SearchIcon,
     "Toggle",
@@ -2780,26 +2746,6 @@ const PlusIcon = ({ c = "#0a0a0a" })=>/*#__PURE__*/ (0, __TURBOPACK__imported__m
         lineNumber: 111,
         columnNumber: 49
     }, ("TURBOPACK compile-time value", void 0));
-const QueueIcon = ({ c = "#fff" })=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
-        width: "16",
-        height: "16",
-        viewBox: "0 0 24 24",
-        fill: "none",
-        stroke: c,
-        strokeWidth: "2",
-        strokeLinecap: "round",
-        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
-            d: "M4 6h16M4 12h11M4 18h8M17 14v6l4-3z"
-        }, void 0, false, {
-            fileName: "[project]/components/ui.jsx",
-            lineNumber: 112,
-            columnNumber: 156
-        }, ("TURBOPACK compile-time value", void 0))
-    }, void 0, false, {
-        fileName: "[project]/components/ui.jsx",
-        lineNumber: 112,
-        columnNumber: 47
-    }, ("TURBOPACK compile-time value", void 0));
 const HomeIcon = ({ c = "#fff" })=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
         width: "17",
         height: "17",
@@ -2814,20 +2760,20 @@ const HomeIcon = ({ c = "#fff" })=>/*#__PURE__*/ (0, __TURBOPACK__imported__modu
                 d: "M3 9.5 12 3l9 6.5V21H3z"
             }, void 0, false, {
                 fileName: "[project]/components/ui.jsx",
-                lineNumber: 113,
+                lineNumber: 112,
                 columnNumber: 178
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
                 d: "M9 21v-7h6v7"
             }, void 0, false, {
                 fileName: "[project]/components/ui.jsx",
-                lineNumber: 113,
+                lineNumber: 112,
                 columnNumber: 214
             }, ("TURBOPACK compile-time value", void 0))
         ]
     }, void 0, true, {
         fileName: "[project]/components/ui.jsx",
-        lineNumber: 113,
+        lineNumber: 112,
         columnNumber: 46
     }, ("TURBOPACK compile-time value", void 0));
 const SearchIcon = ({ c = "#fff" })=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
@@ -2845,20 +2791,20 @@ const SearchIcon = ({ c = "#fff" })=>/*#__PURE__*/ (0, __TURBOPACK__imported__mo
                 r: "7"
             }, void 0, false, {
                 fileName: "[project]/components/ui.jsx",
-                lineNumber: 114,
+                lineNumber: 113,
                 columnNumber: 157
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("path", {
                 d: "m20 20-3-3"
             }, void 0, false, {
                 fileName: "[project]/components/ui.jsx",
-                lineNumber: 114,
+                lineNumber: 113,
                 columnNumber: 189
             }, ("TURBOPACK compile-time value", void 0))
         ]
     }, void 0, true, {
         fileName: "[project]/components/ui.jsx",
-        lineNumber: 114,
+        lineNumber: 113,
         columnNumber: 48
     }, ("TURBOPACK compile-time value", void 0));
 const Logo = ()=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -2880,17 +2826,17 @@ const Logo = ()=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d
                 d: "M4 14v-4M9 18V6M14 16V8M19 13v-2"
             }, void 0, false, {
                 fileName: "[project]/components/ui.jsx",
-                lineNumber: 115,
+                lineNumber: 114,
                 columnNumber: 305
             }, ("TURBOPACK compile-time value", void 0))
         }, void 0, false, {
             fileName: "[project]/components/ui.jsx",
-            lineNumber: 115,
+            lineNumber: 114,
             columnNumber: 188
         }, ("TURBOPACK compile-time value", void 0))
     }, void 0, false, {
         fileName: "[project]/components/ui.jsx",
-        lineNumber: 115,
+        lineNumber: 114,
         columnNumber: 28
     }, ("TURBOPACK compile-time value", void 0));
 }),
@@ -3347,7 +3293,7 @@ function PlayerProvider({ children }) {
     const [playlists, setPlaylists] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$sample$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["PREVIEW"] ? __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$sample$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SAMPLE_PLAYLISTS"] : []);
     const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(!__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$sample$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["PREVIEW"]);
     const [queue, setQueue] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]);
-    const [current, setCurrent] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$sample$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["PREVIEW"] ? __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$sample$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SAMPLE_TRACKS"][0]?.id ?? null : null);
+    const [current, setCurrent] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
     const [playing, setPlaying] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const [elapsed, setElapsed] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(0);
     const [eq, setEq] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([
@@ -3454,14 +3400,13 @@ function PlayerProvider({ children }) {
     // setPlan(user.plan); setAuthed(true);
     };
     const playTrack = async (id)=>{
-        // TODO: const t = library.find((x) => x.id === id);
-        //       audioRef.current.src = t.streamUrl; resume(); audioRef.current.play();
-        //       setCurrent(id); setElapsed(0); setPlaying(true);
         const track = library.find((track)=>track.id === id);
         if (!track) {
             return;
         }
-        if (id === current && audioRef.current.src) {
+        const audioElement = audioRef.current;
+        const isLoaded = current === id && audioElement.src && audioElement.src !== window.location.href;
+        if (isLoaded) {
             await resume();
             await audioRef.current.play().catch(()=>{});
             setPlaying(true);
@@ -3470,10 +3415,10 @@ function PlayerProvider({ children }) {
         // const { url } = await api.getStreamUrl(id);
         // audioRef.current.src = url;
         audioRef.current.src = "/test.mp3";
-        await resume();
-        await audioRef.current.play();
         setCurrent(id);
         setElapsed(0);
+        await resume();
+        await audioElement.play().catch(()=>{});
         setPlaying(true);
     };
     const togglePlay = async ()=>{
@@ -3596,7 +3541,7 @@ function PlayerProvider({ children }) {
         children: children
     }, void 0, false, {
         fileName: "[project]/lib/store.jsx",
-        lineNumber: 241,
+        lineNumber: 239,
         columnNumber: 10
     }, this);
 }

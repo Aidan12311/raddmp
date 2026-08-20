@@ -3,7 +3,7 @@
 import { usePlayer } from "../lib/store";
 import { C, frost, fmtTime } from "../lib/theme";
 import { Spectrum } from "./Visualizers";
-import { PlayIcon, PauseIcon, QueueIcon } from "./ui";
+import { PlayIcon, PauseIcon,  } from "./ui";
 
 /* Fixed to the bottom, rendered by the persistent shell — so it keeps showing
    the current track no matter which route you're on. */
@@ -41,7 +41,7 @@ export function PlayerBar() {
       </div>
 
       <div className="w-1/4 flex justify-end items-center gap-2">
-        <button onClick={() => openModal({ type: "queue" })} className="flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-colors" style={{ color: C.sub, border: `1px solid ${C.line}` }}><QueueIcon c={C.sub} /> {queue.length > 0 && <span className="font-mono">{queue.length}</span>}</button>
+        {/* <button onClick={() => openModal({ type: "queue" })} className="flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-colors" style={{ color: C.sub, border: `1px solid ${C.line}` }}><QueueIcon c={C.sub} /> {queue.length > 0 && <span className="font-mono">{queue.length}</span>}</button> */}
         <div className="hidden lg:block w-20 h-8 rounded-md overflow-hidden" style={{ background: "rgba(255,255,255,0.03)" }}><Spectrum getAnalyser={getAnalyser} playing={playing} big={false} /></div>
         <button onClick={expand} className="text-[12px] font-medium px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors" style={{ color: C.sub, border: `1px solid ${C.line}` }}>Open ↑</button>
       </div>
