@@ -20,7 +20,7 @@ export default function LibraryPage() {
         <PlanChip premium={isPremium} />
       </TopBar>
       <PageBody>
-        <TrackList tracks={library} loading={loading} emptyMsg="Your library is empty — connect your catalog service." />
+        <TrackList tracks={library} loading={loading} emptyMsg="No songs loaded!" />
       </PageBody>
     </>
   );

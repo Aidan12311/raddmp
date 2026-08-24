@@ -1,31 +1,33 @@
 "use client";
 
+import { Spectrum } from "./Visualizers";
 import { usePlayer } from "../lib/store";
 import { C, frost, fmtTime } from "../lib/theme";
-import { Spectrum } from "./Visualizers";
-import { PlayIcon, PauseIcon,  } from "./ui";
+import { PlayIcon, PauseIcon, Artwork } from "./ui";
 
 /* Fixed to the bottom, rendered by the persistent shell — so it keeps showing
    the current track no matter which route you're on. */
 export function PlayerBar() {
-  const { track, playing, elapsed, togglePlay, queue, openModal, expand, getAnalyser, seek } = usePlayer();
+  const { track, playing, elapsed, togglePlay, openModal, expand, getAnalyser, seek, duration } = usePlayer();
   if (!track) {
     return null;
   }
+
+  const real_duration = duration || track.dur;
 
   const onScrub = (e) => {
     const bar = e.currentTarget;
     const rect = bar.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
-    const newTime = (clickX / rect.width) * track.dur;
-    
+    const newTime = (clickX / rect.width) * real_duration;
+
     seek(newTime);
   }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 h-20 flex items-center gap-4 px-4 md:px-6" style={{ ...frost("rgba(16,16,20,0.72)"), borderTop: `1px solid ${C.line}`, zIndex: 20 }}>
       <div className="flex items-center gap-3 w-1/4 min-w-0">
-        <div className="w-12 h-12 rounded-lg shrink-0" style={{ background: `linear-gradient(135deg, ${track.g1}, ${track.g2})` }} />
+        <Artwork track={track} className="w-10 h-10 rounded-md shrink-0" />
         <div className="min-w-0"><div className="text-[13px] font-semibold truncate">{track.title}</div><div className="text-[11px] truncate" style={{ color: C.sub }}>{track.artist}</div></div>
       </div>
 
@@ -34,9 +36,9 @@ export function PlayerBar() {
         <div className="flex items-center gap-2 w-full max-w-md">
           <span className="text-[10px] font-mono" style={{ color: C.faint }}>{fmtTime(elapsed)}</span>
           <div onClick={onScrub} className="flex-1 h-1 rounded-full overflow-hidden cursor-pointer" style={{ background: C.line }}>
-            <div className="h-full rounded-full" style={{ width: `${(elapsed / track.dur) * 100}%`, background: `linear-gradient(90deg, ${C.a1}, ${C.a2})` }} />
+            <div className="h-full rounded-full" style={{ width: `${(elapsed / real_duration) * 100}%`, background: `linear-gradient(90deg, ${C.a1}, ${C.a2})` }} />
           </div>
-          <span className="text-[10px] font-mono" style={{ color: C.faint }}>{fmtTime(track.dur)}</span>
+          <span className="text-[10px] font-mono" style={{ color: C.faint }}>{fmtTime(real_duration)}</span>
         </div>
       </div>
 

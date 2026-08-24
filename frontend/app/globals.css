@@ -35,3 +35,6 @@ input::placeholder { color: #63636e; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+button:not(:disabled) { cursor: pointer; }
+button:disabled { cursor: not-allowed; }

@@ -24,8 +24,22 @@ import { PREVIEW, SAMPLE_TRACKS, SAMPLE_PLAYLISTS } from "./sample";
 const PlayerContext = createContext(null);
 export const usePlayer = () => useContext(PlayerContext);
 
+function getAudioDuration(path) {
+  return new Promise((resolve) => {
+    const audio = new Audio();
+    audio.preload = "metadata";
+    audio.onloadedmetadata = () => {
+      resolve(Math.floor(audio.duration) || 0);
+    };
+
+    audio.onerror = () => resolve(0);
+    audio.src = path;
+  });
+}
+
 export function PlayerProvider({ children }) {
-  const [authed, setAuthed] = useState(PREVIEW);
+  // NOTE: Update this later, just for previewing the UI without a backend
+  const [authed, setAuthed] = useState(true);
   const [plan, setPlan] = useState("premium");
   const [library, setLibrary] = useState(PREVIEW ? SAMPLE_TRACKS : []);
   const [playlists, setPlaylists] = useState(PREVIEW ? SAMPLE_PLAYLISTS : []);
@@ -33,6 +47,7 @@ export function PlayerProvider({ children }) {
   const [queue, setQueue] = useState([]);
 
   const [current, setCurrent] = useState(null);
+  const [duration, setDuration] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [eq, setEq] = useState([0, 0, 0, 0, 0]);
@@ -66,7 +81,7 @@ export function PlayerProvider({ children }) {
           return;
         }
 
-        setLibrary(tracks);w
+        setLibrary(tracks);
         setPlaylists(lists);
       } 
       finally {
@@ -87,13 +102,16 @@ export function PlayerProvider({ children }) {
 
     const currTime = () => setElapsed(audioElement.currentTime);
     const onEnd = () => setPlaying(false);
+    const onMeta = () => setDuration(audioElement.duration || 0);
 
     audioElement.addEventListener("timeupdate", currTime);
     audioElement.addEventListener("ended", onEnd);
+    audioElement.addEventListener("loadedmetadata", onMeta);
 
     return () => {
       audioElement.removeEventListener("timeupdate", currTime);
       audioElement.removeEventListener("ended", onEnd);
+      audioElement.removeEventListener("loadedmetadata", onMeta);
     };
   }, [audioRef]);
 
@@ -120,8 +138,6 @@ export function PlayerProvider({ children }) {
     setElapsed(seconds);
   };
 
-  /* ═══ CONNECT THESE — inert stubs. Fill with lib/api.js calls. ═══════════ */
-
   const handleAuth = async ({ email, password, plan: chosen, mode }) => {
     // TODO: const user = await (mode === "signup"
     //   ? api.signup({ email, password, plan: chosen })
@@ -132,6 +148,11 @@ export function PlayerProvider({ children }) {
   const playTrack = async (id) => {
     const track = library.find((track) => track.id === id);
     if(!track) {
+      return;
+    }
+
+    if(!track.streamUrl) {
+      notify("This track has no stream URL! Check your backend or upload a new track!");
       return;
     }
 
@@ -149,7 +170,7 @@ export function PlayerProvider({ children }) {
     // const { url } = await api.getStreamUrl(id);
     // audioRef.current.src = url;
 
-    audioRef.current.src = "/test.mp3"
+    audioRef.current.src = track.streamUrl;
     setCurrent(id);
     setElapsed(0);
 
@@ -180,9 +201,31 @@ export function PlayerProvider({ children }) {
     setModal(null);
   };
   
-  const uploadTrack = async (data) => {
-    // TODO: await api.uploadTrack(data); setLibrary(await api.listTracks());
-    setModal(null);
+  const uploadTrack = async ({ file, cover, title, artist }) => {
+    const form = new FormData();
+    form.append("file", file);
+    if(cover) {
+      form.append("cover", cover);
+    }
+
+    const res = await fetch("/api/upload", { method: "POST", body: form });
+    if (!res.ok) {
+      notify("Upload failed: " + (await res.text()));
+      return;
+    }
+    
+    const { filePath, coverPath } = await res.json();
+    const duration = await getAudioDuration(filePath);
+
+    setLibrary((prevLib) => [...prevLib, {
+      id: "t" + Date.now(),
+      title: title || file.name.replace(/\.[^/.]+$/, ""),
+      artist: artist || "Unknown Artist",
+      dur: duration,
+      g1: "#67e8f9", g2: "#c084fc",
+      streamUrl: filePath,
+      cover: coverPath || null,
+    }]);
   };
 
   const addToPlaylist = async (trackId, playlistId) => {
@@ -225,7 +268,7 @@ export function PlayerProvider({ children }) {
 const value = {
     authed, plan, isPremium, loading,
     library, playlists, queue,
-    current, track, playing, elapsed, seek,
+    current, track, playing, elapsed, seek, duration,
     eq, fx, vol, setVol,
     modal, openModal: setModal, closeModal: () => setModal(null),
     menu, openMenu: (trackId, e) => { e.stopPropagation(); setMenu({ trackId, x: e.clientX, y: e.clientY }); }, closeMenu: () => setMenu(null),

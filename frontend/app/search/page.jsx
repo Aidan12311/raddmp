@@ -5,27 +5,27 @@
 // the server does the searching (better for large catalogs).
 
 import { useState } from "react";
-import { usePlayer } from "../../lib/store";
 import { C } from "../../lib/theme";
-import { TopBar, PageBody, PlanChip, SearchIcon } from "../../components/ui";
+import { usePlayer } from "../../lib/store";
 import { TrackList } from "../../components/TrackList";
+import { TopBar, PageBody, PlanChip, SearchIcon } from "../../components/ui";
 
 export default function SearchPage() {
   const { library, loading, isPremium } = usePlayer();
-  const [q, setQ] = useState("");
-  const results = q ? library.filter((t) => (t.title + t.artist).toLowerCase().includes(q.toLowerCase())) : library;
+  const [query, setQuery] = useState("");
+  const results = query ? library.filter((track) => (track.title + track.artist).toLowerCase().includes(query.toLowerCase())) : library;
 
   return (
     <>
       <TopBar>
         <div className="flex items-center gap-2 rounded-lg px-3 py-2 max-w-md flex-1" style={{ background: C.bg2, border: `1px solid ${C.line}` }}>
           <SearchIcon c={C.faint} />
-          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search songs, artists…" className="bg-transparent outline-none text-sm flex-1" style={{ color: C.text }} />
+          <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search songs, artists…" className="bg-transparent outline-none text-sm flex-1" style={{ color: C.text }} />
         </div>
         <PlanChip premium={isPremium} />
       </TopBar>
       <PageBody>
-        <TrackList tracks={results} loading={loading} emptyMsg={q ? "No matches." : "Search your catalog."} />
+        <TrackList tracks={results} loading={loading} emptyMsg={query ? "No matches!" : "Search your catalog!"} />
       </PageBody>
     </>
   );

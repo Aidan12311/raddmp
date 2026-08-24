@@ -48,6 +48,19 @@ export function Modal({ title, onClose, children, footer, wide }) {
   );
 }
 
+export function Artwork({ track, className = "" }) {
+  return (
+    <div
+      className={`bg-cover bg-center ${className}`}
+      style={
+        track.cover
+          ? { backgroundImage: `url(${track.cover})` }
+          : { background: `linear-gradient(135deg, ${track.g1}, ${track.g2})` }
+      }
+    />
+  );
+}
+
 export const Field = (p) => (
   <input {...p} className="w-full rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2"
     style={{ background: C.bg2, border: `1px solid ${C.line}`, color: C.text }} />

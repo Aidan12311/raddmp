@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { usePlayer } from "../lib/store";
 import { C, frost } from "../lib/theme";
-import { Modal, Field, BtnPrimary, BtnGhost, PlusIcon, MenuItem } from "./ui";
+import { usePlayer } from "../lib/store";
+import { useState, useRef, useEffect } from "react";
+import { Modal, Field, BtnPrimary, BtnGhost, PlusIcon, MenuItem, Artwork } from "./ui";
 
-/* Reads the store's overlay state (modal / menu) and renders whichever is open.
-   Mounted once in the shell so any page can trigger these. */
 export function Overlays() {
   const { modal, menu } = usePlayer();
   return (
@@ -33,33 +31,119 @@ function CreatePlaylistModal() {
 
 function UploadModal() {
   const { closeModal, uploadTrack } = usePlayer();
-  const [title, setTitle] = useState(""); const [artist, setArtist] = useState("");
+  const [title, setTitle] = useState("");
+  const [artist, setArtist] = useState("");
+  const [file, setFile] = useState(null);
+  const [cover, setCover] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [coverPreview, setCoverPreview] = useState(null);
+
+  useEffect(() => {
+    if (!cover) {
+      setCoverPreview(null);
+      return;
+    }
+
+    const coverUrl = URL.createObjectURL(cover);
+    setCoverPreview(coverUrl);
+
+    return () => URL.revokeObjectURL(coverUrl);
+  }, [cover]);
+
+  const audioInput = useRef(null);
+  const coverInput = useRef(null);
+
+  const pickAudio = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    setFile(file);
+  
+    if (!title) {
+      const fileName = file.name.replace(/\.[^/.]+$/, "");
+      setTitle(fileName);
+    }
+  }
+
+  const pickCover = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setCover(file);
+  }
+
+  const submit = async () => {
+    if (!file || busy) {
+      return;
+    }
+
+    setBusy(true);
+
+    try {
+      await uploadTrack({ file, cover, title: title.trim(), artist: artist.trim() });
+      closeModal();
+    }
+    finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <Modal title="Add a song" onClose={closeModal} footer={<><BtnGhost onClick={closeModal}>Cancel</BtnGhost><BtnPrimary onClick={() => uploadTrack({ title: title.trim(), artist: artist.trim() })}>Add to library</BtnPrimary></>}>
-      <div className="rounded-xl border border-dashed flex flex-col items-center justify-center py-7 mb-4" style={{ borderColor: C.line, color: C.faint }}>
-        <PlusIcon c={C.faint} /><span className="text-[12px] mt-2">Drop an MP3 here (wire the upload later)</span>
-      </div>
-      <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.sub }}>Title</label><div className="mb-3"><Field autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Track title" /></div>
-      <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.sub }}>Artist</label><Field value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Artist name" />
+    <Modal title="Add a song" onClose={closeModal}
+      footer={<><BtnGhost onClick={closeModal}>Cancel</BtnGhost>
+              <BtnPrimary onClick={submit} disabled={!file || busy}>
+                {busy ? "Adding…" : "Add to library"}
+              </BtnPrimary></>}>
+
+      <input ref={audioInput} type="file" accept="audio/*" onChange={pickAudio} className="hidden" />
+      <button onClick={() => audioInput.current?.click()}
+        className="w-full rounded-xl border border-dashed flex flex-col items-center justify-center py-6 mb-3 hover:bg-white/5 transition-colors"
+        style={{ borderColor: C.line, color: C.faint }}>
+        <PlusIcon c={C.faint} />
+        <span className="text-[12px] mt-2">{file ? file.name : "Choose an audio file!"}</span>
+      </button>
+
+      <input ref={coverInput} type="file" accept="image/*" onChange={pickCover} className="hidden" />
+      <button onClick={() => coverInput.current?.click()}
+        className="w-full rounded-xl border border-dashed flex items-center gap-3 px-3 py-3 mb-4 hover:bg-white/5 transition-colors"
+        style={{ borderColor: C.line, color: C.faint }}>
+        <div className="w-12 h-12 rounded-md shrink-0 bg-cover bg-center"
+          style={coverPreview
+            ? { backgroundImage: `url(${coverPreview})` }
+            : { background: `linear-gradient(135deg, ${C.a1}, ${C.a2})` }} />
+        <span className="text-[12px]">{cover ? cover.name : "Choose a cover image (optional)"}</span>
+      </button>
+
+      <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.sub }}>Title</label>
+      <div className="mb-3"><Field value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Track title" /></div>
+      <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.sub }}>Artist</label>
+      <Field value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Artist name" />
     </Modal>
   );
 }
 
 function AddSongsModal({ playlistId }) {
   const { closeModal, library, playlists, addToPlaylist, removeFromPlaylist } = usePlayer();
+  
   const playlist = playlists.find((p) => p.id === playlistId);
-  if (!playlist) return null;
+  if (!playlist) {
+    return null;
+  }
+
   return (
     <Modal wide title={`Add songs · ${playlist.name}`} onClose={closeModal} footer={<BtnPrimary onClick={closeModal}>Done</BtnPrimary>}>
       <div className="flex flex-col gap-1 max-h-80 overflow-y-auto radd-scroll">
         {library.length === 0 && <p className="text-[13px] text-center py-6" style={{ color: C.sub }}>Your library is empty.</p>}
-        {library.map((t) => {
-          const inList = playlist.tracks.includes(t.id);
+        {library.map((track) => {
+          const inList = playlist.tracks.includes(track.id);
           return (
-            <div key={t.id} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5">
-              <div className="w-9 h-9 rounded-md shrink-0" style={{ background: `linear-gradient(135deg, ${t.g1}, ${t.g2})` }} />
-              <div className="flex-1 min-w-0"><div className="text-[13px] font-medium truncate">{t.title}</div><div className="text-[11px] truncate" style={{ color: C.sub }}>{t.artist}</div></div>
-              <button onClick={() => (inList ? removeFromPlaylist(t.id, playlist.id) : addToPlaylist(t.id, playlist.id))} className="text-[12px] font-medium px-2.5 py-1 rounded-md" style={{ color: inList ? C.faint : "#0a0a0a", background: inList ? "transparent" : `linear-gradient(90deg, ${C.a1}, ${C.a2})`, border: inList ? `1px solid ${C.line}` : "none" }}>{inList ? "Remove" : "Add"}</button>
+            <div key={track.id} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5">
+              <Artwork track={track} className="w-10 h-10 rounded-md shrink-0" />
+              <div className="flex-1 min-w-0"><div className="text-[13px] font-medium truncate">{track.title}</div><div className="text-[11px] truncate" style={{ color: C.sub }}>{track.artist}</div></div>
+              <button onClick={() => (inList ? removeFromPlaylist(track.id, playlist.id) : addToPlaylist(track.id, playlist.id))} className="text-[12px] font-medium px-2.5 py-1 rounded-md" style={{ color: inList ? C.faint : "#0a0a0a", background: inList ? "transparent" : `linear-gradient(90deg, ${C.a1}, ${C.a2})`, border: inList ? `1px solid ${C.line}` : "none" }}>{inList ? "Remove" : "Add"}</button>
             </div>
           );
         })}
@@ -77,7 +161,7 @@ function QueueModal() {
         <div className="flex flex-col gap-1 max-h-80 overflow-y-auto radd-scroll">{tracks.map((t, i) => (
           <button key={i} onClick={() => { playTrack(t.id); closeModal(); }} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 text-left">
             <span className="text-[12px] font-mono w-5 text-center" style={{ color: C.faint }}>{i + 1}</span>
-            <div className="w-8 h-8 rounded-md shrink-0" style={{ background: `linear-gradient(135deg, ${t.g1}, ${t.g2})` }} />
+            <Artwork track={t} className="w-10 h-10 rounded-md shrink-0" />
             <div className="min-w-0"><div className="text-[13px] font-medium truncate">{t.title}</div><div className="text-[11px] truncate" style={{ color: C.sub }}>{t.artist}</div></div>
           </button>))}</div>
       )}
@@ -89,6 +173,7 @@ function TrackMenu() {
   const { menu, closeMenu, playlists, playTrack, addToQueue, addToPlaylist } = usePlayer();
   const [sub, setSub] = useState(false);
   const x = Math.min(menu.x, window.innerWidth - 210), y = Math.min(menu.y, window.innerHeight - 220);
+  
   return (
     <div className="fixed" style={{ left: x, top: y, zIndex: 65 }} onClick={(e) => e.stopPropagation()}>
       <div className="w-52 rounded-xl overflow-hidden py-1" style={{ ...frost("rgba(26,26,31,0.96)"), border: `1px solid ${C.line}` }}>

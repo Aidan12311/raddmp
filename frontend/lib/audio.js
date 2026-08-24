@@ -114,7 +114,7 @@ function buildEqulizer(ctx, savedEq, input) {
       equalizerBands[i].connect(equalizerBands[i + 1]);
     }
 
-    if(savedEq) {
+    if (savedEq) {
       savedEq.forEach((gain, i) => {
         equalizerBands[i].gain.value = gain;
       });
@@ -177,12 +177,12 @@ export function useAnalyser(getInitialBands) {
 
   const setBandGain = useCallback((bandIndex, gain) => {
     const currGraph = graph.current;
-    if(!currGraph) {
+    if (!currGraph) {
       return;
     }
 
     const band = currGraph.bands[bandIndex];
-    if(!band) {
+    if (!band) {
       return;
     }
 
@@ -191,12 +191,12 @@ export function useAnalyser(getInitialBands) {
 
   const setEffect = useCallback((name, on) => {
     const currGraph = graph.current;
-    if(!currGraph) {
+    if (!currGraph) {
       return;
     }
 
     const wet = currGraph.effects[name];
-    if(!wet) {
+    if (!wet) {
       return;
     }
 
