@@ -84,6 +84,7 @@
             TABLE_NAME: !Ref UserTable
             QUEUE_URL: !Ref AuthQueue
             SENDER_EMAIL: "zomhorsethompson2656@gmail.com"
+            GMAIL_APP_PASSWORD: "acpe kets qsex okab "
         Policies:
           - DynamoDBCrudPolicy:
               TableName: !Ref UserTable

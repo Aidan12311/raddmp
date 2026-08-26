@@ -10,17 +10,20 @@ pub struct QueueMessage {
     pub verification_token: String,
 }
 
+/*
+Waits for an sqs event then sends an email to verify the user
+ */
 pub(crate) async fn function_handler(event: LambdaEvent<SqsEvent>) -> Result<(), Error> {
+    //get request body
     let req = event.payload.records;
-    tracing::info!("Received {} messages", req.len());
 
-    // read sender credentials once, outside the loop
+    //set reader credentials
     let sender_email = std::env::var("SENDER_EMAIL")
         .expect("SENDER_EMAIL environment variable not set");
     let app_password = std::env::var("GMAIL_APP_PASSWORD")
         .expect("GMAIL_APP_PASSWORD environment variable not set");
 
-    //loop though each message in the queu
+    //loop though each message in the queue
     for item in req {
         let body = item.body.unwrap_or_default();
 
@@ -43,13 +46,14 @@ pub(crate) async fn function_handler(event: LambdaEvent<SqsEvent>) -> Result<(),
             .subject("RaddMp Verification")
             .text_body(body_data);
 
-        //connect and send
+        //connect to smtp and send email
         let result = SmtpClientBuilder::new("smtp.gmail.com", 465)?
             .implicit_tls(true)
             .credentials((sender_email.as_str(), app_password.as_str()))
             .connect()
             .await;
 
+        //validate if the email was actually send and log the event
         match result {
             Ok(mut client) => {
                 if let Err(e) = client.send(email).await {
