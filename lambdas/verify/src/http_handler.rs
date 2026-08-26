@@ -1,5 +1,6 @@
 use lambda_http::{Body, Error, Request, RequestExt, Response};
-use crate::helpers::{text_response, verify_jwt};
+use crate::helpers::{text_response, verify_jwt, create_dynamo_client};
+use aws_sdk_dynamodb::{types::AttributeValue};
 
 /*
 Verifies a user in the database
@@ -24,8 +25,16 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         }
     };
 
-    //TODO update the user object in the database
-    let user_id = claims.sub;
+    //create dynamo client and update user verified field in database
+    let client = create_dynamo_client().await;
+    client
+        .update_item()
+        .table_name("users")
+        .key("id", AttributeValue::S(claims.sub.to_string()))
+        .update_expression("SET is_verified = :verified")
+        .expression_attribute_values(":verified", AttributeValue::Bool(true))
+        .send()
+        .await?;
 
     text_response("verified", 200)
 }

@@ -5,13 +5,6 @@ use lambda_http::http::header::{HeaderValue, SET_COOKIE};
 use aws_sdk_dynamodb::types::AttributeValue;
 use serde_dynamo::from_item;
 
-//Takes in a username and password
-//check if the request body is empty
-//if not 
-//search the database for the given username
-//if found hash given password
-//compare password hashes
-//if they equal return an auth token
 /*
 Validates if a user exists in the database and returns an auth token
 Takes in a request object like this {username: "", password: ""}

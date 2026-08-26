@@ -1,5 +1,5 @@
 use lambda_http::{Body, Error, Response};
-use aws_config::{BehaviorVersion, Region};
+use aws_config::{BehaviorVersion};
 use sha2::{Digest, Sha256};
 use jsonwebtoken::{encode, Header, EncodingKey, Algorithm};
 use chrono::{Utc};

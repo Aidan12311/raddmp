@@ -87,6 +87,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     Ok(response)
 }
 
+//made this to have my code clearer but it didnt do shit
 fn is_valid_field(field: &str, pattern: Regex) -> bool {
     pattern.is_match(field).unwrap_or(false)
 }

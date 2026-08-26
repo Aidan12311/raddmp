@@ -1,9 +1,6 @@
 use lambda_http::{Body, Error, Response};
-use aws_config::{BehaviorVersion, Region};
-use sha2::{Digest, Sha256};
 use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
-use chrono::{Utc};
-use crate::models::{Claims, User};
+use crate::models::{Claims};
 
 
 /*
@@ -12,14 +9,6 @@ Creates a dynamo client with lastest aws_config
 pub async fn create_dynamo_client() -> aws_sdk_dynamodb::Client {
     let config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
     aws_sdk_dynamodb::Client::new(&config)
-}
-
-/*
-Creates a sqs client with lastest aws_config
- */
-pub async fn create_sqs_client() -> aws_sdk_sqs::Client {
-    let config = aws_config::load_defaults(BehaviorVersion::latest()).await;
-    aws_sdk_sqs::Client::new(&config)
 }
 
 /*
@@ -32,17 +21,6 @@ pub fn text_response(message: &str, status_code: u16) -> Result<Response<Body>, 
         .header("content-type", "text/html")
         .body(message.into())
         .map_err(Box::new)?)
-}
-
-/*
-Takes a &String and hashes it using sha256
- */
-pub fn hash(password: &String) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(password.as_bytes());
-    let result = hasher.finalize();
-
-    hex::encode_upper(result)
 }
 
 /*

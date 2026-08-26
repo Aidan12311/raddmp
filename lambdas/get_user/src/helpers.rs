@@ -1,6 +1,4 @@
 use lambda_http::{Body, Error, Response, Request};
-use aws_config::{BehaviorVersion, Region};
-use aws_sdk_dynamodb::Client;
 use serde::Serialize;
 
 /*
