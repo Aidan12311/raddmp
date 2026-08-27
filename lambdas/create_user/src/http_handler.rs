@@ -71,7 +71,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         .table_name("RaddUsersTable")
         .index_name("EmailIndex")
         .key_condition_expression("email = :email")
-        .expression_attribute_values(":email", AttributeValue::S(user.username.clone()))
+        .expression_attribute_values(":email", AttributeValue::S(user.email.clone()))
         .send()
         .await?;
 
