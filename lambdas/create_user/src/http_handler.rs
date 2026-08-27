@@ -41,8 +41,37 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         is_verified: false
     };
 
-    //create dynamo client and upload the user to the database
+    //create dynamo client
     let client = create_dynamo_client().await;
+
+    //check database for existing username
+    let result = client
+        .query()
+        .table_name("RaddUsersTable")
+        .index_name("UsernameIndex")
+        .key_condition_expression("username = :username")
+        .expression_attribute_values(":username", AttributeValue::S(user.username.clone()))
+        .send()
+        .await?;
+
+    if !result.items().is_empty() {
+        return text_response("Username already exists", 400);
+    }
+
+    //check the database for an existing email
+    let result = client
+        .query()
+        .table_name("RaddUsersTable")
+        .index_name("EmailIndex")
+        .key_condition_expression("email = :email")
+        .expression_attribute_values(":email", AttributeValue::S(user.username.clone()))
+        .send()
+        .await?;
+
+    if !result.items().is_empty() {
+        return text_response("Email already exists", 400);
+    }
+
     let _result = client
         .put_item()
         .table_name("RaddUsersTable")

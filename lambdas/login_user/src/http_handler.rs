@@ -30,7 +30,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     //validate the result
     let item = match result.items().first() {
         Some(item) => item.clone(),
-        None => return text_response("invalid username or password", 401),
+        None => return text_response("invalid username or password", 400),
     };
 
     //serialize database item into user object
@@ -39,7 +39,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     //hash given password and compare password hashes
     let hash = hash(&req.password);
     if hash != user.password {
-        return text_response("invalid username or password", 401);
+        return text_response("invalid username or password", 400);
     }
 
     //generate auth token and send request
