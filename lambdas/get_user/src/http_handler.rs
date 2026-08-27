@@ -5,6 +5,10 @@ use crate::helpers::{create_dynamo_client, text_response, json_response, extract
 use aws_sdk_dynamodb::types::AttributeValue;
 use serde_dynamo::aws_sdk_dynamodb_1::from_item;
 
+/*
+Gets a user from the dynamo table
+Uses the auth token to grab the user id
+ */
 pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
     //check if request contains an auth token
     let token = match extract_token_from_cookie(&event) {
@@ -13,7 +17,6 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     };
 
     //decode auth token 
-    //todo i probably want to make this a function
     let claims = match decode::<Claims>(
         &token,
         &DecodingKey::from_secret("JWT_SECRET".as_bytes()),
@@ -38,5 +41,6 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         return Ok(json_response(&user, 200)?)
     }
     
+    //return 404 if the user wasnt found
     Ok(text_response("User not found please check the id and try again", 404)?)
 } 

@@ -1,441 +1,450 @@
-  AWSTemplateFormatVersion: '2010-09-09'
-  Transform: AWS::Serverless-2016-10-31
-  Description: >
-    RADD sam deployment template
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  RADD sam deployment template
 
-  Parameters:
-    JwtSecret:
-      Type: String
-      NoEcho: true
-      Default: JWT_SECRET
+Parameters:
+  JwtSecret:
+    Type: String
+    NoEcho: true
+    Default: JWT_SECRET
 
-  Globals:
-    Function:
-      Timeout: 3
-      MemorySize: 128
-    Api:
+Globals:
+  Function:
+    Timeout: 3
+    MemorySize: 128
+  Api:
+    Cors:
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'content-type'"
+      AllowOrigin: "'*'"
+
+Resources:
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name: !Sub "ApplicationInsights-SAM-${AWS::StackName}"
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName: !Ref ApplicationResourceGroup
+      AutoConfigurationEnabled: 'true'
+
+  RaddGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: RaddGateway
+      StageName: Prod
       Cors:
         AllowMethods: "'GET,POST,OPTIONS'"
         AllowHeaders: "'content-type'"
         AllowOrigin: "'*'"
+      Auth:
+        Authorizers:
+          RaddAuthorizer:
+            FunctionArn: !GetAtt AuthFunction.Arn
+            FunctionPayloadType: REQUEST
+            Identity:
+              Headers:
+                - Cookie
+              ReauthorizeEvery: 300
 
-  Resources:
-    ApplicationResourceGroup:
-      Type: AWS::ResourceGroups::Group
-      Properties:
-        Name: !Sub "ApplicationInsights-SAM-${AWS::StackName}"
-        ResourceQuery:
-          Type: CLOUDFORMATION_STACK_1_0
+  AuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/auth/
+      Handler: login_auth.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          JWT_SECRET: !Ref JwtSecret
 
-    ApplicationInsightsMonitoring:
-      Type: AWS::ApplicationInsights::Application
-      Properties:
-        ResourceGroupName: !Ref ApplicationResourceGroup
-        AutoConfigurationEnabled: 'true'
+  AuthQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: AuthQueue
 
-    RaddGateway:
-      Type: AWS::Serverless::Api
-      Properties:
-        Name: RaddGateway
-        StageName: Prod
-        Cors:
-          AllowMethods: "'GET,POST,OPTIONS'"
-          AllowHeaders: "'content-type'"
-          AllowOrigin: "'*'"
-        Auth:
-          Authorizers:
-            RaddAuthorizer:
-              FunctionArn: !GetAtt AuthFunction.Arn
-              FunctionPayloadType: REQUEST
-              Identity:
-                Headers:
-                  - Cookie
-                ReauthorizeEvery: 300
+  VerificationConsumer:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      CodeUri: lambdas/verification_consumer/
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          QUEUE_URL: !Ref AuthQueue
+          SENDER_EMAIL: "zomhorsethompson2656@gmail.com"
+          GMAIL_APP_PASSWORD: "acpe kets qsex okab "
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+        - SQSPollerPolicy:
+            QueueName: !GetAtt AuthQueue.QueueName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+              Resource: "*"
+      Events:
+        AuthQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt AuthQueue.Arn
+            BatchSize: 10
+            Enabled: true
 
-    AuthFunction:
-      Type: AWS::Serverless::Function
-      Properties:
-        CodeUri: lambdas/auth/
-        Handler: login_auth.lambda_handler
-        Runtime: python3.13
-        Architectures:
-          - x86_64
-        Environment:
-          Variables:
-            JWT_SECRET: !Ref JwtSecret
+  UserTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: RaddUsersTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: username
+          AttributeType: S
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UsernameIndex
+          KeySchema:
+            - AttributeName: username
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: EmailIndex
+          KeySchema:
+            - AttributeName: email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
 
-    AuthQueue:
-      Type: AWS::SQS::Queue
-      Properties:
-        QueueName: AuthQueue
+  MusicTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: RaddMusicTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: MusicId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: MusicId
+          KeyType: HASH
 
-    VerificationConsumer:
-      Type: AWS::Serverless::Function
-      Metadata:
-        BuildMethod: rust-cargolambda
-      Properties:
-        CodeUri: lambdas/verification_consumer/
-        Handler: bootstrap
-        Runtime: provided.al2023
-        Architectures:
-          - x86_64
-        Environment:
-          Variables:
-            TABLE_NAME: !Ref UserTable
-            QUEUE_URL: !Ref AuthQueue
-            SENDER_EMAIL: "zomhorsethompson2656@gmail.com"
-        Policies:
-          - DynamoDBCrudPolicy:
-              TableName: !Ref UserTable
-          - SQSPollerPolicy:
-              QueueName: !GetAtt AuthQueue.QueueName
-          - Statement:
-              - Effect: Allow
-                Action:
-                  - ses:SendEmail
-                Resource: "*"
-        Events:
-          AuthQueueEvent:
-            Type: SQS
-            Properties:
-              Queue: !GetAtt AuthQueue.Arn
-              BatchSize: 10
-              Enabled: true
+  Mp3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - HEAD
+            AllowedOrigins:
+              - "*"
+            MaxAge: 3000
 
-    UserTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: RaddUsersTable
-        BillingMode: PAY_PER_REQUEST
-        AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-          - AttributeName: username
-            AttributeType: S
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-        GlobalSecondaryIndexes:
-          - IndexName: UsernameIndex
-            KeySchema:
-              - AttributeName: username
-                KeyType: HASH
-            Projection:
-              ProjectionType: ALL
+  ImageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - HEAD
+            AllowedOrigins:
+              - "*"
+            MaxAge: 3000
 
-    MusicTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: RaddMusicTable
-        BillingMode: PAY_PER_REQUEST
-        AttributeDefinitions:
-          - AttributeName: MusicId
-            AttributeType: S
-        KeySchema:
-          - AttributeName: MusicId
-            KeyType: HASH
+  CreateUser:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      CodeUri: lambdas/create_user/
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          QUEUE_URL: !Ref AuthQueue
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AuthQueue.QueueName
+      Events:
+        CreateUser:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /users
+            Method: POST
 
-    Mp3Bucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        CorsConfiguration:
-          CorsRules:
-            - AllowedHeaders:
-                - "*"
-              AllowedMethods:
-                - GET
-                - PUT
-                - HEAD
-              AllowedOrigins:
-                - "*"
-              MaxAge: 3000
+  GetUser:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      CodeUri: lambdas/get_user/
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref UserTable
+      Events:
+        GetUser:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /users
+            Method: GET
+            Auth:
+              Authorizer: RaddAuthorizer
 
-    ImageBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        CorsConfiguration:
-          CorsRules:
-            - AllowedHeaders:
-                - "*"
-              AllowedMethods:
-                - GET
-                - PUT
-                - HEAD
-              AllowedOrigins:
-                - "*"
-              MaxAge: 3000
+  Login:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      CodeUri: lambdas/login_user/
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          JWT_SECRET: !Ref JwtSecret
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref UserTable
+      Events:
+        Login:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /login
+            Method: POST
 
-    CreateUser:
-      Type: AWS::Serverless::Function
-      Metadata:
-        BuildMethod: rust-cargolambda
-      Properties:
-        CodeUri: lambdas/create_user/
-        Handler: bootstrap
-        Runtime: provided.al2023
-        Architectures:
-          - x86_64
-        Environment:
-          Variables:
-            TABLE_NAME: !Ref UserTable
-            QUEUE_URL: !Ref AuthQueue
-        Policies:
-          - DynamoDBCrudPolicy:
-              TableName: !Ref UserTable
-          - SQSSendMessagePolicy:
-              QueueName: !GetAtt AuthQueue.QueueName
-        Events:
-          CreateUser:
-            Type: Api
-            Properties:
-              RestApiId: !Ref RaddGateway
-              Path: /users
-              Method: POST
+  VerifyUser:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      CodeUri: lambdas/verify/
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          JWT_SECRET: !Ref JwtSecret
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        VerifyUser:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /users/verify
+            Method: GET
 
-    GetUser:
-      Type: AWS::Serverless::Function
-      Metadata:
-        BuildMethod: rust-cargolambda
-      Properties:
-        CodeUri: lambdas/get_user/
-        Handler: bootstrap
-        Runtime: provided.al2023
-        Architectures:
-          - x86_64
-        Environment:
-          Variables:
-            TABLE_NAME: !Ref UserTable
-        Policies:
-          - DynamoDBReadPolicy:
-              TableName: !Ref UserTable
-        Events:
-          GetUser:
-            Type: Api
-            Properties:
-              RestApiId: !Ref RaddGateway
-              Path: /users
-              Method: GET
-              Auth:
-                Authorizer: RaddAuthorizer
+  CreateMusic:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/music_crud/
+      Handler: create_music.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref MusicTable
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref MusicTable
+      Events:
+        CreateMusic:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /music
+            Method: POST
 
-    Login:
-      Type: AWS::Serverless::Function
-      Metadata:
-        BuildMethod: rust-cargolambda
-      Properties:
-        CodeUri: lambdas/login_user/
-        Handler: bootstrap
-        Runtime: provided.al2023
-        Architectures:
-          - x86_64
-        Environment:
-          Variables:
-            TABLE_NAME: !Ref UserTable
-            JWT_SECRET: !Ref JwtSecret
-        Policies:
-          - DynamoDBReadPolicy:
-              TableName: !Ref UserTable
-        Events:
-          Login:
-            Type: Api
-            Properties:
-              RestApiId: !Ref RaddGateway
-              Path: /login
-              Method: POST
+  ListMusic:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/music_crud/
+      Handler: list_music.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref MusicTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MusicTable
+      Events:
+        ListMusic:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /music
+            Method: GET
 
-    VerifyUser:
-      Type: AWS::Serverless::Function
-      Metadata:
-        BuildMethod: rust-cargolambda
-      Properties:
-        CodeUri: lambdas/verify/
-        Handler: bootstrap
-        Runtime: provided.al2023
-        Architectures:
-          - x86_64
-        Environment:
-          Variables:
-            TABLE_NAME: !Ref UserTable
-            JWT_SECRET: !Ref JwtSecret
-        Policies:
-          - DynamoDBCrudPolicy:
-              TableName: !Ref UserTable
-        Events:
-          VerifyUser:
-            Type: Api
-            Properties:
-              RestApiId: !Ref RaddGateway
-              Path: /users/verify
-              Method: GET
+  GetMusic:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/music_crud/
+      Handler: get_music.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref MusicTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MusicTable
+      Events:
+        GetMusic:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /music/{musicId}
+            Method: GET
 
-    CreateMusic:
-      Type: AWS::Serverless::Function
-      Properties:
-        CodeUri: lambdas/music_crud/
-        Handler: create_music.lambda_handler
-        Runtime: python3.13
-        Architectures:
-          - x86_64
-        Environment:
-          Variables:
-            TABLE_NAME: !Ref MusicTable
-        Policies:
-          - DynamoDBWritePolicy:
-              TableName: !Ref MusicTable
-        Events:
-          CreateMusic:
-            Type: Api
-            Properties:
-              RestApiId: !Ref RaddGateway
-              Path: /music
-              Method: POST
+  UpdateMusic:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/music_crud/
+      Handler: update_music.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref MusicTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MusicTable
+      Events:
+        UpdateMusic:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /music/{musicId}
+            Method: PUT
 
-    ListMusic:
-      Type: AWS::Serverless::Function
-      Properties:
-        CodeUri: lambdas/music_crud/
-        Handler: list_music.lambda_handler
-        Runtime: python3.13
-        Architectures:
-          - x86_64
-        Environment:
-          Variables:
-            TABLE_NAME: !Ref MusicTable
-        Policies:
-          - DynamoDBReadPolicy:
-              TableName: !Ref MusicTable
-        Events:
-          ListMusic:
-            Type: Api
-            Properties:
-              RestApiId: !Ref RaddGateway
-              Path: /music
-              Method: GET
+  DeleteMusic:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/music_crud/
+      Handler: delete_music.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref MusicTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MusicTable
+      Events:
+        DeleteMusic:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /music/{musicId}
+            Method: DELETE
 
-    GetMusic:
-      Type: AWS::Serverless::Function
-      Properties:
-        CodeUri: lambdas/music_crud/
-        Handler: get_music.lambda_handler
-        Runtime: python3.13
-        Architectures:
-          - x86_64
-        Environment:
-          Variables:
-            TABLE_NAME: !Ref MusicTable
-        Policies:
-          - DynamoDBReadPolicy:
-              TableName: !Ref MusicTable
-        Events:
-          GetMusic:
-            Type: Api
-            Properties:
-              RestApiId: !Ref RaddGateway
-              Path: /music/{musicId}
-              Method: GET
+  FileUploadUrl:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/music_crud/
+      Handler: file_upload_url.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          MP3_BUCKET: !Ref Mp3Bucket
+          IMAGE_BUCKET: !Ref ImageBucket
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Ref Mp3Bucket
+        - S3WritePolicy:
+            BucketName: !Ref ImageBucket
+      Events:
+        FileUploadUrl:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /music/upload-url
+            Method: POST
 
-    UpdateMusic:
-      Type: AWS::Serverless::Function
-      Properties:
-        CodeUri: lambdas/music_crud/
-        Handler: update_music.lambda_handler
-        Runtime: python3.13
-        Architectures:
-          - x86_64
-        Environment:
-          Variables:
-            TABLE_NAME: !Ref MusicTable
-        Policies:
-          - DynamoDBCrudPolicy:
-              TableName: !Ref MusicTable
-        Events:
-          UpdateMusic:
-            Type: Api
-            Properties:
-              RestApiId: !Ref RaddGateway
-              Path: /music/{musicId}
-              Method: PUT
+Outputs:
+  ApiUrl:
+    Description: Base URL for the API
+    Value: !Sub "https://${RaddGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
 
-    DeleteMusic:
-      Type: AWS::Serverless::Function
-      Properties:
-        CodeUri: lambdas/music_crud/
-        Handler: delete_music.lambda_handler
-        Runtime: python3.13
-        Architectures:
-          - x86_64
-        Environment:
-          Variables:
-            TABLE_NAME: !Ref MusicTable
-        Policies:
-          - DynamoDBCrudPolicy:
-              TableName: !Ref MusicTable
-        Events:
-          DeleteMusic:
-            Type: Api
-            Properties:
-              RestApiId: !Ref RaddGateway
-              Path: /music/{musicId}
-              Method: DELETE
+  UserTableName:
+    Description: DynamoDB table name for users
+    Value: !Ref UserTable
 
-    FileUploadUrl:
-      Type: AWS::Serverless::Function
-      Properties:
-        CodeUri: lambdas/music_crud/
-        Handler: file_upload_url.lambda_handler
-        Runtime: python3.13
-        Architectures:
-          - x86_64
-        Environment:
-          Variables:
-            MP3_BUCKET: !Ref Mp3Bucket
-            IMAGE_BUCKET: !Ref ImageBucket
-        Policies:
-          - S3WritePolicy:
-              BucketName: !Ref Mp3Bucket
-          - S3WritePolicy:
-              BucketName: !Ref ImageBucket
-        Events:
-          FileUploadUrl:
-            Type: Api
-            Properties:
-              RestApiId: !Ref RaddGateway
-              Path: /music/upload-url
-              Method: POST
+  AuthQueueUrl:
+    Description: SQS queue URL for auth events
+    Value: !Ref AuthQueue
 
-  Outputs:
-    ApiUrl:
-      Description: Base URL for the API
-      Value: !Sub "https://${RaddGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  CreateUserFunctionArn:
+    Description: Create User Lambda ARN
+    Value: !GetAtt CreateUser.Arn
 
-    UserTableName:
-      Description: DynamoDB table name for users
-      Value: !Ref UserTable
+  GetUserFunctionArn:
+    Description: Get User Lambda ARN
+    Value: !GetAtt GetUser.Arn
 
-    AuthQueueUrl:
-      Description: SQS queue URL for auth events
-      Value: !Ref AuthQueue
+  LoginFunctionArn:
+    Description: Login Lambda ARN
+    Value: !GetAtt Login.Arn
 
-    CreateUserFunctionArn:
-      Description: Create User Lambda ARN
-      Value: !GetAtt CreateUser.Arn
+  MusicTableName:
+    Description: DynamoDB table name for music
+    Value: !Ref MusicTable
 
-    GetUserFunctionArn:
-      Description: Get User Lambda ARN
-      Value: !GetAtt GetUser.Arn
+  Mp3BucketName:
+    Description: S3 bucket for mp3 uploads
+    Value: !Ref Mp3Bucket
 
-    LoginFunctionArn:
-      Description: Login Lambda ARN
-      Value: !GetAtt Login.Arn
-
-    MusicTableName:
-      Description: DynamoDB table name for music
-      Value: !Ref MusicTable
-
-    Mp3BucketName:
-      Description: S3 bucket for mp3 uploads
-      Value: !Ref Mp3Bucket
-
-    ImageBucketName:
-      Description: S3 bucket for cover images
-      Value: !Ref ImageBucket
+  ImageBucketName:
+    Description: S3 bucket for cover images
+    Value: !Ref ImageBucket

@@ -1,16 +1,22 @@
 use lambda_http::{Body, Error, Response};
-use aws_config::{BehaviorVersion, Region};
 use sha2::{Digest, Sha256};
 use jsonwebtoken::{encode, Header, EncodingKey, Algorithm};
 use chrono::{Utc};
 use crate::models::{Claims, User};
 
 
+/*
+Creates a dynamo client with lastest aws_config
+ */
 pub async fn create_dynamo_client() -> aws_sdk_dynamodb::Client {
     let config = aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
     aws_sdk_dynamodb::Client::new(&config)
 }
 
+/*
+Sends a http text resonse
+Takes an &str message and a status code as u16 
+ */
 pub fn text_response(message: &str, status_code: u16) -> Result<Response<Body>, Error> {
     Ok(Response::builder()
         .status(status_code)
@@ -19,6 +25,9 @@ pub fn text_response(message: &str, status_code: u16) -> Result<Response<Body>, 
         .map_err(Box::new)?)
 }
 
+/*
+Takes a &String and hashes it using sha256
+ */
 pub fn hash(password: &String) -> String {
     let mut hasher = Sha256::new();
     hasher.update(password.as_bytes());
@@ -27,7 +36,10 @@ pub fn hash(password: &String) -> String {
     hex::encode_upper(result)
 }
 
-//TODO i might need a funciton for only verification but i dont think it matters all that much
+/*
+Creates a jwt from a user object
+Takes in an &User object and a &str secret phrase 
+ */
 pub fn create_jwt(user: &User, secret: &str) -> Result<String, Error> {
     //TODO maybe chaange the token lifetime to something else or allow it to be entered as a parameter
     const TOKEN_LIFETIME_SECONDS: i64 = 60 * 60 * 24;
