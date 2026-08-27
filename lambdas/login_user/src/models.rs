@@ -25,3 +25,8 @@ pub struct Claims {
     pub iat: usize,
     pub exp: usize,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ResponseBody {
+    pub message: String
+}

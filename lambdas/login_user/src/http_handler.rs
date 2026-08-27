@@ -1,6 +1,6 @@
 use lambda_http::{Body, Error, Request, RequestPayloadExt, Response};
-use crate::helpers::{create_dynamo_client, create_jwt, hash, text_response};
-use crate::models::{RequestBody, User};
+use crate::helpers::{create_dynamo_client, create_jwt, hash, text_response, json_response};
+use crate::models::{RequestBody, User, ResponseBody};
 use lambda_http::http::header::{HeaderValue, SET_COOKIE};
 use aws_sdk_dynamodb::types::AttributeValue;
 use serde_dynamo::from_item;
@@ -13,10 +13,14 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     //validate the request body isnt empty and has the proper object structure
     let req = match event.payload::<RequestBody>() {
         Ok(Some(req)) => req,
-        Ok(None) => return text_response("Request body empty", 400),
+        Ok(None) => {
+            let response = ResponseBody{message: "Request body empty".to_string()};
+            return json_response(&response, 400)
+        },
         Err(err) => {
             println!("{err}");
-            return text_response("internal server error", 500)
+            let response = ResponseBody{message: "Internal server error".to_string()};
+            return json_response(&response, 500)
         },
     };
 
@@ -30,7 +34,10 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     //validate the result
     let item = match result.items().first() {
         Some(item) => item.clone(),
-        None => return text_response("invalid username or password", 400),
+        None => {
+            let response = ResponseBody{message: "Invalid username".to_string()};
+            return json_response(&response, 400)
+        },
     };
 
     //serialize database item into user object
@@ -39,16 +46,21 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     //hash given password and compare password hashes
     let hash = hash(&req.password);
     if hash != user.password {
-        return text_response("invalid username or password", 400);
+        let response = ResponseBody{message: "Invalid Password".to_string()};
+        return json_response(&response, 400);
     }
 
     //generate auth token and send request
     let auth_token = create_jwt(&user, "JWT_SECRET")?;
     let cookie_value = format!("auth_token={}; HttpOnly; Secure; SameSite=Strict; Path=/", auth_token);
+    let response_body = ResponseBody{message: "Logged in".to_string()};
     let response = Response::builder()
         .status(200)
+        .header("content-type", "application/json")
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Credentials", "true")
         .header(SET_COOKIE, HeaderValue::from_str(&cookie_value)?)
-        .body(Body::from("logged in"))?;
+        .body(Body::from(serde_json::to_string(&response_body)?))?;
 
     Ok(response)
 }
