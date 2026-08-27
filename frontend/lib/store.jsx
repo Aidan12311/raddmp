@@ -39,7 +39,7 @@ function getAudioDuration(path) {
 
 export function PlayerProvider({ children }) {
   // NOTE: Update this later, just for previewing the UI without a backend
-  const [authed, setAuthed] = useState(true);
+  const [authed, setAuthed] = useState(false);
   const [plan, setPlan] = useState("premium");
   const [library, setLibrary] = useState(PREVIEW ? SAMPLE_TRACKS : []);
   const [playlists, setPlaylists] = useState(PREVIEW ? SAMPLE_PLAYLISTS : []);
@@ -138,11 +138,25 @@ export function PlayerProvider({ children }) {
     setElapsed(seconds);
   };
 
-  const handleAuth = async ({ email, password, plan: chosen, mode }) => {
-    // TODO: const user = await (mode === "signup"
-    //   ? api.signup({ email, password, plan: chosen })
-    //   : api.login({ email, password }));
-    // setPlan(user.plan); setAuthed(true);
+  const handleAuth = async ({ email, password, plan: chosen, mode, username }) => {
+      try {
+      const user = await (mode === "signup"
+        ? api.signup({ email, password, plan: chosen, username })
+        : api.login({ username, password }));
+
+      setPlan(user.plan || "basic");
+      setAuthed(true);
+    } catch (err) {
+      // request() throws `Error(\`Request failed: ${res.status}\`)` on non-2xx responses
+      if (err.message?.includes("401")) {
+        notify(mode === "signup" ? "Could not create account" : "Invalid username or password");
+      } else if (err.message?.includes("409")) {
+        notify("An account with that username already exists");
+      } else {
+        notify("Something went wrong — please try again");
+      }
+      console.error(`${mode} failed:`, err);
+    }
   };
 
   const playTrack = async (id) => {

@@ -26,12 +26,16 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
 // tiny wrapper so every call sends/parses JSON the same way
 async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+  const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
-    credentials: "include", // sends the auth cookie on browser calls
+    credentials: "include",
     ...options,
   });
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => "");
+    throw new Error(errorText || `Request failed: ${res.status}`);
+  }
   return res.status === 204 ? null : res.json();
 }
 
@@ -55,8 +59,8 @@ export async function searchTracks(query) {
 }
 
 /* ── writes (called from the store's action stubs once you wire them) ────── */
-export const login = (body) => request("/auth/login", { method: "POST", body: JSON.stringify(body) });
-export const signup = (body) => request("/auth/signup", { method: "POST", body: JSON.stringify(body) });
+export const login = (body) => request(`${API_BASE}/login`, { method: "POST", body: JSON.stringify(body) });
+export const signup = (body) => request(`${API_BASE}/users`, { method: "POST", body: JSON.stringify(body) });
 
 // For the file itself: ask your backend for a pre-signed upload URL, PUT the
 // file to storage, then POST the metadata here.
