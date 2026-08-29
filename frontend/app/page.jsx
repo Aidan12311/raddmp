@@ -7,8 +7,8 @@
 // interactivity on top.)
 
 import { usePlayer } from "../lib/store";
-import { TopBar, PageBody, PlanChip, GradientBtn, PlusIcon } from "../components/ui";
 import { TrackList } from "../components/TrackList";
+import { TopBar, PageBody, PlanToggle, GradientBtn, PlusIcon } from "../components/ui";
 
 export default function LibraryPage() {
   const { library, loading, isPremium, openModal } = usePlayer();
@@ -17,7 +17,7 @@ export default function LibraryPage() {
       <TopBar>
         <h1 className="text-lg font-semibold tracking-tight flex-1">Your Library</h1>
         <GradientBtn onClick={() => openModal({ type: "upload" })}><PlusIcon /> Add song</GradientBtn>
-        <PlanChip premium={isPremium} />
+        <PlanToggle premium={isPremium} />
       </TopBar>
       <PageBody>
         <TrackList tracks={library} loading={loading} emptyMsg="No songs loaded!" />

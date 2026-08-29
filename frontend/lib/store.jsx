@@ -4,41 +4,14 @@ import { createContext, useContext, useState, useEffect, useRef } from "react";
 
 import * as api from "./api";
 import { useAnalyser } from "./audio";
+import { PLAN_LIMITS } from "./plans";
 import { PREVIEW, SAMPLE_TRACKS, SAMPLE_PLAYLISTS } from "./sample";
-
-/* ════════════════════════════════════════════════════════════════════════════
-   The app store (client).
-
-   Holds everything that must OUTLIVE navigation: the playing track, playlists,
-   library, queue, auth, EQ/effects. Mounted once in app/layout.jsx, ABOVE the
-   router, so moving between /, /search, /playlist/[id] never stops playback.
-
-   DATA LOADING: this store loads the library + playlists once, in the browser,
-   with useEffect (see below). The very first page shows a brief "Loading…";
-   after that every navigation is instant because the data already lives here.
-
-   Every ACTION is an inert stub. Fill each with a call to lib/api.js — the exact
-   line is written in a comment right there. See README → "Connecting a backend".
-   ────────────────────────────────────────────────────────────────────────── */
+import { GSP_NO_RETURNED_VALUE } from "next/dist/lib/constants";
 
 const PlayerContext = createContext(null);
 export const usePlayer = () => useContext(PlayerContext);
 
-function getAudioDuration(path) {
-  return new Promise((resolve) => {
-    const audio = new Audio();
-    audio.preload = "metadata";
-    audio.onloadedmetadata = () => {
-      resolve(Math.floor(audio.duration) || 0);
-    };
-
-    audio.onerror = () => resolve(0);
-    audio.src = path;
-  });
-}
-
 export function PlayerProvider({ children }) {
-  // NOTE: Update this later, just for previewing the UI without a backend
   const [authed, setAuthed] = useState(true);
   const [plan, setPlan] = useState("premium");
   const [library, setLibrary] = useState(PREVIEW ? SAMPLE_TRACKS : []);
@@ -62,28 +35,29 @@ export function PlayerProvider({ children }) {
 
   const eqRef = useRef(eq);
   useEffect(() => { eqRef.current = eq; }, [eq]);
+  
   const { audioRef, resume, getAnalyser, setBandGain, setEffect } = useAnalyser(() => eqRef.current);
+  
   const isPremium = plan === "premium";
+  const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.basic;
+
   const track = library.find((t) => t.id === current) || null;
 
-  /* ── INITIAL DATA LOAD (client-side). Runs once, after first paint. ──────
-     With no backend configured, api.* returns [] so the app just shows empty
-     lists. Point NEXT_PUBLIC_API_BASE at your backend and this fills in. ── */
-  
   useEffect(() => {
-    if (PREVIEW) { setLoading(false); return; }
     let alive = true;
     
     (async () => {
       try {
-        const [tracks, lists] = await Promise.all([api.listTracks(), api.listPlaylists()]);
-        if (!alive) {
-          return;
-        }
+        const tracks = await api.listTracks();
 
-        setLibrary(tracks);
-        setPlaylists(lists);
-      } 
+        if(alive) {
+          setLibrary(tracks);
+          // setPlaylists(lists);
+        }
+      }
+      catch(e) {
+        console.error("Failed to load library! Error: ", e);
+      }
       finally {
         if (alive) {
           setLoading(false);
@@ -151,12 +125,11 @@ export function PlayerProvider({ children }) {
       return;
     }
 
-    if(!track.streamUrl) {
-      notify("This track has no stream URL! Check your backend or upload a new track!");
+    const audioElement = audioRef.current;
+    if (!track.streamUrl) {
+      notify("This track has no audio!");
       return;
     }
-
-    const audioElement = audioRef.current;
 
     const isLoaded = current === id && audioElement.src && audioElement.src !== window.location.href;
     if (isLoaded) {
@@ -166,9 +139,6 @@ export function PlayerProvider({ children }) {
       setPlaying(true);
       return;
     }
-
-    // const { url } = await api.getStreamUrl(id);
-    // audioRef.current.src = url;
 
     audioRef.current.src = track.streamUrl;
     setCurrent(id);
@@ -186,63 +156,74 @@ export function PlayerProvider({ children }) {
       return;
     }
 
-    if(playing) {
+    if (playing) {
       audioElement.pause();
       setPlaying(false);
     } 
     else {
-      await audioElement.play();
+      await audioElement.play().catch(() => {});
       setPlaying(true);
     }
   };
 
   const createPlaylist = async (name) => {
     // TODO: await api.createPlaylist(name); setPlaylists(await api.listPlaylists());
+    if (playlists.length >= limits.maxPlaylists) {
+      notify(`Failed to create playlist! The basic plan is limited to ${limits.maxPlaylists} playlists!`);
+      return;
+    }
+    
     setModal(null);
   };
   
   const uploadTrack = async ({ file, cover, title, artist }) => {
-    const form = new FormData();
-    form.append("file", file);
-    if(cover) {
-      form.append("cover", cover);
-    }
+    const getFileDuration = async (file) => {
+      return new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const audio = new Audio();
+        audio.preload = "metadata";
+        
+        audio.onloadedmetadata = () => {
+          URL.revokeObjectURL(url);
+          resolve(Math.floor(audio.duration) || 0);
+        };
 
-    const res = await fetch("/api/upload", { method: "POST", body: form });
-    if (!res.ok) {
-      notify("Upload failed: " + (await res.text()));
-      return;
-    }
-    
-    const { filePath, coverPath } = await res.json();
-    const duration = await getAudioDuration(filePath);
+        audio.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(0);
+        }
+        audio.src = url;
+      });
+    };
 
-    setLibrary((prevLib) => [...prevLib, {
-      id: "t" + Date.now(),
+    const durationSec = await getFileDuration(file);
+    const mp3Url = await api.uploadFile(file, "mp3");
+    const coverUrl = cover ? await api.uploadFile(cover, "image") : null;
+
+    const newTrack = await api.createTrack({
       title: title || file.name.replace(/\.[^/.]+$/, ""),
       artist: artist || "Unknown Artist",
-      dur: duration,
-      g1: "#67e8f9", g2: "#c084fc",
-      streamUrl: filePath,
-      cover: coverPath || null,
-    }]);
+      durationSec,
+      mp3Url,
+      coverUrl
+    });
+
+    setLibrary(await api.listTracks());
+    return newTrack;
   };
 
   const addToPlaylist = async (trackId, playlistId) => {
+    const playlist = playlists.find((playlist) => playlist.id === playlistId);
+    if (playlist && playlists.tracks.length >= limits.maxSongsPerPlaylist) {
+      notify(`Failed to add track! The basic only allows for ${limits.maxSongsPerPlaylist} songs per playlist!`);
+      return;
+    }
     // TODO: await api.addTrackToPlaylist(playlistId, trackId); setPlaylists(await api.listPlaylists());
   };
   
   const removeFromPlaylist = async (trackId, playlistId) => {
     // TODO: await api.removeTrackFromPlaylist(playlistId, trackId); setPlaylists(await api.listPlaylists());
   };
-  const addToQueue = (trackId) => { setQueue((q) => [...q, trackId]); };
-  
-  const shareLink = async () => {
-    // TODO: const { shareUrl } = await api.createListeningLink(current);
-    //       navigator.clipboard.writeText(shareUrl); notify("Link copied");
-  };
-
-  const upgrade = () => { /* TODO: send the user to your checkout / upgrade flow */ };
 
   const setEqBand = (i, v) => {
     setEq((p) => p.map((x, xi) => (xi === i ? v : x))); 
@@ -257,6 +238,11 @@ export function PlayerProvider({ children }) {
   }
 
   const toggleFx = (key) => {
+    if (!limits.effects.includes(key)) {
+      notify("That effect is a premium feature!");
+      return;
+    }
+
     setFx((effect) => {
       const newState = !effect[key];
       setEffect(key, newState);
@@ -264,6 +250,16 @@ export function PlayerProvider({ children }) {
       return { ...effect, [key]: newState };
     })
   };
+
+  const upgrade = () => {
+    setPlan("premium");
+    notify("Upgraded to premium!");
+  }
+
+  const downgrade = () => {
+    setPlan("basic");
+    notify("Downgraded to basic!");
+  }
 
 const value = {
     authed, plan, isPremium, loading,
@@ -275,7 +271,7 @@ const value = {
     expanded, expand: () => setExpanded(true), collapse: () => setExpanded(false),
     audioRef, getAnalyser, toast, notify,
     handleAuth, playTrack, togglePlay, createPlaylist, uploadTrack,
-    addToPlaylist, removeFromPlaylist, addToQueue, shareLink, upgrade,
+    addToPlaylist, removeFromPlaylist, upgrade, downgrade,
     setEqBand, resetEq, toggleFx,
 };
 

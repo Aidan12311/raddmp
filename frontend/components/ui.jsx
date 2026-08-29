@@ -1,9 +1,7 @@
 "use client";
 
 import { C, frost } from "../lib/theme";
-
-/* Small presentational building blocks used across the app. No state of their
-   own — they take props and render. */
+import { usePlayer } from "../lib/store";
 
 export function TopBar({ children }) {
   return (
@@ -20,6 +18,27 @@ export function PageBody({ children }) {
     <section className="flex-1 overflow-y-auto radd-scroll px-5 md:px-8 py-6" style={{ paddingBottom: 112 }}>
       {children}
     </section>
+  );
+}
+
+export function PlanToggle() {
+  const { plan, isPremium, upgrade, downgrade } = usePlayer();
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] font-bold tracking-wider px-2 py-1 rounded-md uppercase"
+        style={{
+          color: isPremium ? "#0b0b0e" : C.sub,
+          background: isPremium ? `linear-gradient(135deg, ${C.a1}, ${C.a2})` : "transparent",
+          border: isPremium ? "none" : `1px solid ${C.line}`,
+        }}>
+        {plan}
+      </span>
+      <button onClick={isPremium ? downgrade : upgrade}
+        className="text-[11px] font-medium px-2.5 py-1 rounded-md hover:bg-white/5 transition-colors"
+        style={{ color: C.sub, border: `1px solid ${C.line}` }}>
+        {isPremium ? "Switch to Free" : "Upgrade"}
+      </button>
+    </div>
   );
 }
 

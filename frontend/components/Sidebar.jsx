@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { usePlayer } from "../lib/store";
-import { C, frost } from "../lib/theme";
-import { Logo, HomeIcon, SearchIcon } from "./ui";
 
-/* Lives in the persistent shell, so it stays put as routes change. Nav uses
-   Next.js <Link> for client-side navigation (no full page reload). */
+import { C, frost } from "../lib/theme";
+import { usePlayer } from "../lib/store";
+import { Logo, HomeIcon, SearchIcon, PlanToggle } from "./ui";
+
+<div className="px-3 py-2"><PlanToggle /></div>
+
 export function Sidebar() {
   const { playlists, plan, openModal } = usePlayer();
   const pathname = usePathname();
@@ -55,6 +56,7 @@ function NavLink({ href, label, Icon, active }) {
 function PlanBadge() {
   const { plan, upgrade } = usePlayer();
   if (plan === "premium") return (<div className="rounded-xl p-3 mt-2" style={{ ...frost(C.panel), border: `1px solid ${C.line}` }}><div className="text-[12px] font-semibold">Premium</div><div className="text-[10px] mt-0.5" style={{ color: C.faint }}>Unlimited everything</div></div>);
+  
   return (
     <div className="rounded-xl p-3 mt-2" style={{ ...frost(C.panel), border: `1px solid ${C.line}` }}>
       <div className="text-[12px] font-semibold mb-1">Free plan</div>

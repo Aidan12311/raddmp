@@ -20,52 +20,104 @@
      return empty/sample data, so the app runs with no backend and never errors.
 ════════════════════════════════════════════════════════════════════════════ */
 
-import { PREVIEW, SAMPLE_TRACKS, SAMPLE_PLAYLISTS } from "./sample";
-
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
+const MUSIC_ENDPOINT = process.env.NEXT_PUBLIC_API_MUSIC_ENDPOINT || "/music";
 
-// tiny wrapper so every call sends/parses JSON the same way
+function toLength(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const leftoverSeconds = Math.floor(seconds % 60);
+
+  return `${minutes}:${String(leftoverSeconds).padStart(2, "0")}`;
+}
+
 async function request(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
-    credentials: "include", // sends the auth cookie on browser calls
+    // credentials: "include",
     ...options,
   });
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+
   return res.status === 204 ? null : res.json();
 }
 
-/* ── reads (used by SSR + the UI). Safe to call with no backend. ─────────── */
+function toTrack(musicJson) {
+  const parseDuration = (durationStr) => {
+    if (typeof durationStr !== "string" || !durationStr.includes(":")) return 0;
+
+    const[minutes, seconds] = durationStr.split(":").map(Number);
+    return (minutes || 0) * 60 + (seconds || 0);
+  };
+
+  return {
+    id: musicJson.MusicId,
+    title: musicJson.Title,
+    artist: musicJson.Artists,
+    dur: parseDuration(musicJson.Length),
+    streamUrl: musicJson.Mp3File && musicJson.Mp3File !== "none" ? musicJson.Mp3File : null,
+    cover: musicJson.CoverImage && musicJson.CoverImage !== "none" ? musicJson.CoverImage : null,
+    g1: "#67e8f9", g2: "#c084fc",
+  };
+}
+
 export async function listTracks() {
-  if (PREVIEW) return SAMPLE_TRACKS;
-  if (!API_BASE) return [];
-  try { return await request("/tracks"); } catch { return []; }
+  const tracks = await request(MUSIC_ENDPOINT);
+  return Array.isArray(tracks) ? tracks.map(toTrack) : [];
 }
 
-export async function listPlaylists() {
-  if (PREVIEW) return SAMPLE_PLAYLISTS;
-  if (!API_BASE) return [];
-  try { return await request("/playlists"); } catch { return []; }
+export async function getTrack(id) {
+  const track = await request(`${MUSIC_ENDPOINT}/${id}`);
+  return toTrack(track);
 }
 
-export async function searchTracks(query) {
-  if (PREVIEW) return SAMPLE_TRACKS.filter((t) => (t.title + t.artist).toLowerCase().includes(query.toLowerCase()));
-  if (!API_BASE) return [];
-  return request(`/tracks?q=${encodeURIComponent(query)}`);
+export const createTrack = ( {title, artist, durationSec, mp3Url, coverUrl }) => 
+  request(MUSIC_ENDPOINT, {
+    method: "POST",
+    body: JSON.stringify({
+      Title: title,
+      Artists: artist,
+      Length: toLength(durationSec),
+      Mp3File: mp3Url || "none",
+      CoverImage: coverUrl || "none"
+    }),
+  });
+
+export const updateTrack = (id, fields) =>
+  request(`${MUSIC_ENDPOINT}/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(fields),
+  });
+
+export const deleteTrack = (id) =>
+  request(`${MUSIC_ENDPOINT}/${id}`, { method: "DELETE" });
+
+export const getUploadUrl = (fileType, fileExtension) =>
+  request(`${MUSIC_ENDPOINT}/upload-url`, {
+    method: "POST",
+    body: JSON.stringify({ fileType, fileExtension })
+  });
+
+export async function uploadFile(file, fileType) {
+  const fileExtension = file.name.split(".").pop().toLowerCase();
+  const { uploadUrl, fileUrl } = await getUploadUrl(fileType, fileExtension);
+
+  const putCall = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type" : file.type },
+    body: file
+  });
+  
+  if (!putCall.ok) {
+    throw new Error(`S3 upload failed! Error status code: ${putCall.status}`);
+  }
+
+  return fileUrl;
 }
 
-/* ── writes (called from the store's action stubs once you wire them) ────── */
 export const login = (body) => request("/auth/login", { method: "POST", body: JSON.stringify(body) });
 export const signup = (body) => request("/auth/signup", { method: "POST", body: JSON.stringify(body) });
 
-// For the file itself: ask your backend for a pre-signed upload URL, PUT the
-// file to storage, then POST the metadata here.
-export const uploadTrack = (body) => request("/tracks", { method: "POST", body: JSON.stringify(body) });
-
-export const createPlaylist = (name) => request("/playlists", { method: "POST", body: JSON.stringify({ name }) });
-export const addTrackToPlaylist = (playlistId, trackId) => request(`/playlists/${playlistId}/tracks`, { method: "POST", body: JSON.stringify({ trackId }) });
-export const removeTrackFromPlaylist = (playlistId, trackId) => request(`/playlists/${playlistId}/tracks/${trackId}`, { method: "DELETE" });
-
-export const createListeningLink = (trackId) => request("/sessions", { method: "POST", body: JSON.stringify({ trackId }) });
-
-export const getStreamUrl = (id) => request(`/tracks/${id}/stream-url`);
+export async function listPlaylists() { return []; }

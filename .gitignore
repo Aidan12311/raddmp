@@ -8,7 +8,7 @@ node_modules/
 !.yarn/releases
 !.yarn/versions
 
-# sam stuff
+# SAM build artifacts
 .aws-sam
 
 # testing
@@ -24,6 +24,8 @@ build/
 # misc
 .DS_Store
 *.pem
+/public/test_music/
+/public/test_covers/
 
 # debug
 npm-debug.log*

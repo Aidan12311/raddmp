@@ -8,7 +8,7 @@ import { useState } from "react";
 import { C } from "../../lib/theme";
 import { usePlayer } from "../../lib/store";
 import { TrackList } from "../../components/TrackList";
-import { TopBar, PageBody, PlanChip, SearchIcon } from "../../components/ui";
+import { TopBar, PageBody, PlanToggle, SearchIcon } from "../../components/ui";
 
 export default function SearchPage() {
   const { library, loading, isPremium } = usePlayer();
@@ -22,7 +22,7 @@ export default function SearchPage() {
           <SearchIcon c={C.faint} />
           <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search songs, artists…" className="bg-transparent outline-none text-sm flex-1" style={{ color: C.text }} />
         </div>
-        <PlanChip premium={isPremium} />
+        <PlanToggle premium={isPremium} />
       </TopBar>
       <PageBody>
         <TrackList tracks={results} loading={loading} emptyMsg={query ? "No matches!" : "Search your catalog!"} />
