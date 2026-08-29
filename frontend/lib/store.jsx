@@ -113,15 +113,15 @@ export function PlayerProvider({ children }) {
   };
 
   const handleAuth = async ({ email, password, plan: chosen, mode, username }) => {
-      try {
+    try {
       const user = await (mode === "signup"
         ? api.signup({ email, password, plan: chosen, username })
         : api.login({ username, password }));
 
       setPlan(user.plan || "basic");
       setAuthed(true);
-    } catch (err) {
-      // request() throws `Error(\`Request failed: ${res.status}\`)` on non-2xx responses
+    } 
+    catch (err) {
       if (err.message?.includes("401")) {
         notify(mode === "signup" ? "Could not create account" : "Invalid username or password");
       } else if (err.message?.includes("409")) {
@@ -129,7 +129,8 @@ export function PlayerProvider({ children }) {
       } else {
         notify("Something went wrong — please try again");
       }
-      console.error(`${mode} failed:`, err);
+
+      console.error(`${mode} failed: `, err);
     }
   };
 

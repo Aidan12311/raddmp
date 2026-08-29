@@ -1,3 +1,5 @@
+use std::env;
+
 use lambda_http::{Body, Error, Request, Response};
 use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
 use crate::models::{Claims, User};
@@ -16,10 +18,14 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         None => return text_response("Missing auth token", 401),
     };
 
+    // extract JWT secret from env var
+    let jwt_secret = std::env("JWT_SECRET")
+        .expect("JWT_SECRET must be set!");
+
     //decode auth token 
     let claims = match decode::<Claims>(
         &token,
-        &DecodingKey::from_secret("JWT_SECRET".as_bytes()),
+        &DecodingKey::from_secret(jwt_secret.as_bytes()),
         &Validation::new(Algorithm::HS256),
     ) {
         Ok(data) => data.claims,
@@ -43,4 +49,4 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     
     //return 404 if the user wasnt found
     Ok(text_response("User not found please check the id and try again", 404)?)
-} 
+}

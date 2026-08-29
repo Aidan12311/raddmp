@@ -95,8 +95,10 @@ export async function uploadFile(file, fileType) {
   return fileUrl;
 }
 
-/* ── writes (called from the store's action stubs once you wire them) ────── */
-export const login = (body) => request(`${API_BASE}/login`, { method: "POST", body: JSON.stringify(body) });
-export const signup = (body) => request(`${API_BASE}/users`, { method: "POST", body: JSON.stringify(body) });
-
 export async function listPlaylists() { return []; }
+
+export const login = (body) => 
+  request(`${API_BASE}/login`, { method: "POST", body: JSON.stringify(body) });
+
+export const signup = (body) => 
+  request(`${API_BASE}/users`, { method: "POST", body: JSON.stringify(body) });
