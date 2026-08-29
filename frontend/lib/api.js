@@ -98,7 +98,7 @@ export async function uploadFile(file, fileType) {
 export async function listPlaylists() { return []; }
 
 export const login = (body) => 
-  request(`${API_BASE}/login`, { method: "POST", body: JSON.stringify(body) });
+  request("/login", { method: "POST", body: JSON.stringify(body) });
 
 export const signup = (body) => 
-  request(`${API_BASE}/users`, { method: "POST", body: JSON.stringify(body) });
+  request("/users", { method: "POST", body: JSON.stringify(body) });
