@@ -31,3 +31,8 @@ pub struct QueueMessage {
     pub email: String,
     pub verification_token: String
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ResponseBody {
+    pub message: String
+}

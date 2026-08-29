@@ -29,6 +29,8 @@ pub fn json_response<T: Serialize>(value: &T, status_code: u16,) -> Result<Respo
     Ok(Response::builder()
         .status(status_code)
         .header("content-type", "application/json")
+        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Credentials", "true")
         .body(serde_json::to_string(value)?.into())
         .map_err(Box::new)?)
 }

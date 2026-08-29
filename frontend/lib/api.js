@@ -1,25 +1,3 @@
-/* ════════════════════════════════════════════════════════════════════════════
-   lib/api.js  —  THE DATA SEAM  (plain HTTP calls to your backend)
-
-   Every network call the app makes lives here, and nowhere else. Each function
-   is a normal `fetch` to one of your backend's URLs. There is no GraphQL and no
-   proxy — the browser (or the server, during SSR) calls your API directly.
-
-   POINT IT AT YOUR BACKEND ───────────────────────────────────────────────────
-   In .env.local set:
-     NEXT_PUBLIC_API_BASE=https://api.raddmp.example.com
-
-   The paths below ("/tracks", "/playlists", …) are examples — rename them to
-   match whatever your backend actually exposes. The rest of the app never
-   changes; it only knows these function names.
-
-   Notes:
-   • Browser → backend calls need CORS headers on your backend.
-   • Server → backend calls (SSR, from app/layout.jsx) do NOT.
-   • While NEXT_PUBLIC_API_BASE is unset (or PREVIEW is on) the read functions
-     return empty/sample data, so the app runs with no backend and never errors.
-════════════════════════════════════════════════════════════════════════════ */
-
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 const MUSIC_ENDPOINT = process.env.NEXT_PUBLIC_API_MUSIC_ENDPOINT || "/music";
 
@@ -31,16 +9,16 @@ function toLength(seconds) {
 }
 
 async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+  const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
     // credentials: "include",
     ...options,
   });
-
   if (!res.ok) {
-    throw new Error(`Request failed: ${res.status}`);
+    const errorText = await res.text().catch(() => "");
+    throw new Error(errorText || `Request failed: ${res.status}`);
   }
-
   return res.status === 204 ? null : res.json();
 }
 
@@ -117,7 +95,8 @@ export async function uploadFile(file, fileType) {
   return fileUrl;
 }
 
-export const login = (body) => request("/auth/login", { method: "POST", body: JSON.stringify(body) });
-export const signup = (body) => request("/auth/signup", { method: "POST", body: JSON.stringify(body) });
+/* ── writes (called from the store's action stubs once you wire them) ────── */
+export const login = (body) => request(`${API_BASE}/login`, { method: "POST", body: JSON.stringify(body) });
+export const signup = (body) => request(`${API_BASE}/users`, { method: "POST", body: JSON.stringify(body) });
 
 export async function listPlaylists() { return []; }
