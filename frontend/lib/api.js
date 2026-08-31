@@ -12,7 +12,7 @@ async function request(path, options = {}) {
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
   const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
-    // credentials: "include",
+    credentials: "include",
     ...options,
   });
   if (!res.ok) {
@@ -102,3 +102,5 @@ export const login = (body) =>
 
 export const signup = (body) => 
   request("/users", { method: "POST", body: JSON.stringify(body) });
+
+export const getUser = () => request("/users", { method: "GET" });

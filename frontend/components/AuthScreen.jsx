@@ -26,18 +26,19 @@ export function AuthScreen() {
           <h1 className="text-lg font-semibold mb-1">{mode === "login" ? "Welcome back" : "Create your account"}</h1>
           <p className="text-[13px] mb-5" style={{ color: C.sub }}>{mode === "login" ? "Sign in to keep listening." : "Free plan — upgrade any time."}</p>
 
-          <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.sub }}>Username</label>
-          <div className="mb-4"><Field type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter Username" /></div>
-
-          <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.sub }}>Password</label>
-          <div className="mb-4"><Field type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" /></div>
-
           {mode === "signup" && (
             <div className="mb-3">
               <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.sub }}>Email</label>
               <Field type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
             </div>
           )}
+
+          <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.sub }}>Username</label>
+          <div className="mb-4"><Field type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Enter Username" /></div>
+
+          <label className="block text-[11px] font-medium mb-1.5" style={{ color: C.sub }}>Password</label>
+          <div className="mb-4"><Field type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" /></div>
+
 
           {mode === "signup" && (
             <div className="mb-4">

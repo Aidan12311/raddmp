@@ -1,3 +1,5 @@
+use std::env;
+
 use lambda_http::{Body, Error, Request, RequestExt, Response};
 use crate::helpers::{text_response, verify_jwt, create_dynamo_client};
 use aws_sdk_dynamodb::{types::AttributeValue};
@@ -17,7 +19,10 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     }
 
     //decode jwt and validte it matches my claims
-    let claims = match verify_jwt(token, "ThisIsTheSecret") {
+    let jwt_secret = env::var("JWT_SECRET")
+        .expect("JWT_SECRET not set!");
+
+    let claims = match verify_jwt(token, &jwt_secret) {
         Ok(claims) => claims,
         Err(err) => {
             println!("{err}");
@@ -29,7 +34,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     let client = create_dynamo_client().await;
     client
         .update_item()
-        .table_name("users")
+        .table_name("RaddUsersTable")
         .key("id", AttributeValue::S(claims.sub.to_string()))
         .update_expression("SET is_verified = :verified")
         .expression_attribute_values(":verified", AttributeValue::Bool(true))

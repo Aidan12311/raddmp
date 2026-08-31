@@ -17,7 +17,8 @@ Globals:
     Cors:
       AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
       AllowHeaders: "'content-type'"
-      AllowOrigin: "'*'"
+      AllowOrigin: "'http://localhost:3000'"
+      AllowCredentials: true
 
 Resources:
   ApplicationResourceGroup:
@@ -41,7 +42,8 @@ Resources:
       Cors:
         AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
         AllowHeaders: "'content-type'"
-        AllowOrigin: "'*'"
+        AllowOrigin: "'http://localhost:3000'"
+        AllowCredentials: true
       Auth:
         Authorizers:
           RaddAuthorizer:
@@ -214,6 +216,7 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref UserTable
+          JWT_SECRET: !Ref JwtSecret
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref UserTable

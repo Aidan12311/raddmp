@@ -48,10 +48,13 @@ def lambda_handler(event, context):
     updated_item = table.get_item(Key={"MusicId": music_id}).get("Item")
     return _response(200, updated_item)
 
-
 def _response(status_code, body):
     return {
         "statusCode": status_code,
-        "headers": {"Content-Type": "application/json"},
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "http://localhost:3000",
+            "Access-Control-Allow-Credentials": "true",
+        },
         "body": json.dumps(body),
     }

@@ -12,7 +12,7 @@ const PlayerContext = createContext(null);
 export const usePlayer = () => useContext(PlayerContext);
 
 export function PlayerProvider({ children }) {
-  const [authed, setAuthed] = useState(true);
+  const [authed, setAuthed] = useState(false);
   const [plan, setPlan] = useState("premium");
   const [library, setLibrary] = useState(PREVIEW ? SAMPLE_TRACKS : []);
   const [playlists, setPlaylists] = useState(PREVIEW ? SAMPLE_PLAYLISTS : []);
@@ -42,6 +42,22 @@ export function PlayerProvider({ children }) {
   const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.basic;
 
   const track = library.find((t) => t.id === current) || null;
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const user = await api.getUser();   // sends cookie automatically via credentials: "include"
+        if (alive) {
+          setPlan(user.has_basic_plan ? "basic" : "premium");
+          setAuthed(true);
+        }
+      } catch {
+        // no valid cookie / expired token — stays on the login screen, which is correct
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     let alive = true;
