@@ -12,7 +12,7 @@ async function request(path, options = {}) {
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
   const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
-    // credentials: "include",
+    credentials: "include",
     ...options,
   });
   if (!res.ok) {
