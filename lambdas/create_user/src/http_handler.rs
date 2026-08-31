@@ -32,10 +32,10 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         return json_response(&response, 400)
     }
 
-    if !is_valid_field(&req.password, Regex::new(r#"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$"#)?){
-        let response = ResponseBody{message: "Incorrect Password".to_string()};
-        return json_response(&response, 400)
-    }
+    // if !is_valid_field(&req.password, Regex::new(r#"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$"#)?){
+    //    let response = ResponseBody{message: "Incorrect Password".to_string()};
+    //    return json_response(&response, 400)
+    // }
 
     //generate user object and missing required fields
     let user = User {
