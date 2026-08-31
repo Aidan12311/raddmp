@@ -115,12 +115,12 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     //SECRET = JWT_SECRET
     //TODO Make the secret an environemnt variable
     let auth_token = create_jwt(&user, "JWT_SECRET")?;
-    let cookie_value = format!("auth_token={}; HttpOnly; Secure; SameSite=Strict; Path=/", auth_token);
+    let cookie_value = format!("auth_token={}; HttpOnly; Secure; SameSite=None; Path=/", auth_token);
     let response_body = ResponseBody{message: "Created user".to_string()};
     let response = Response::builder()
         .status(201)
         .header("content-type", "application/json")
-        .header("Access-Control-Allow-Origin", "*")
+        .header("Access-Control-Allow-Origin", "http://localhost:3000")
         .header("Access-Control-Allow-Credentials", "true")
         .header(SET_COOKIE, HeaderValue::from_str(&cookie_value)?)
         .body(Body::from(serde_json::to_string(&response_body)?))?;

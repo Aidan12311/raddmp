@@ -102,3 +102,5 @@ export const login = (body) =>
 
 export const signup = (body) => 
   request("/users", { method: "POST", body: JSON.stringify(body) });
+
+export const getUser = () => request("/users", { method: "GET" });
