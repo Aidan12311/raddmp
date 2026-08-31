@@ -42,8 +42,8 @@ function toTrack(musicJson) {
 }
 
 export async function listTracks() {
-  const tracks = await request(MUSIC_ENDPOINT);
-  return Array.isArray(tracks) ? tracks.map(toTrack) : [];
+  const res = await request(MUSIC_ENDPOINT);
+  return (res.items ?? []).map(toTrack);
 }
 
 export async function getTrack(id) {
