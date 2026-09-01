@@ -12,7 +12,7 @@ async function request(path, options = {}) {
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
   const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
-    // credentials: "include",
+    credentials: "include",
     ...options,
   });
   if (!res.ok) {
@@ -42,8 +42,8 @@ function toTrack(musicJson) {
 }
 
 export async function listTracks() {
-  const tracks = await request(MUSIC_ENDPOINT);
-  return Array.isArray(tracks) ? tracks.map(toTrack) : [];
+  const res = await request(MUSIC_ENDPOINT);
+  return (res.items ?? []).map(toTrack);
 }
 
 export async function getTrack(id) {
@@ -102,3 +102,5 @@ export const login = (body) =>
 
 export const signup = (body) => 
   request("/users", { method: "POST", body: JSON.stringify(body) });
+
+export const getUser = () => request("/users", { method: "GET" });

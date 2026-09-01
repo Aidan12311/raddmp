@@ -19,7 +19,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     };
 
     // extract JWT secret from env var
-    let jwt_secret = env::var("JWT_SECRET")
+    let jwt_secret = std::env::var("JWT_SECRET")
         .expect("JWT_SECRET must be set!");
 
     //decode auth token 

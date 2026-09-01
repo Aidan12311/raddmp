@@ -6,13 +6,12 @@ import * as api from "./api";
 import { useAnalyser } from "./audio";
 import { PLAN_LIMITS } from "./plans";
 import { PREVIEW, SAMPLE_TRACKS, SAMPLE_PLAYLISTS } from "./sample";
-import { GSP_NO_RETURNED_VALUE } from "next/dist/lib/constants";
 
 const PlayerContext = createContext(null);
 export const usePlayer = () => useContext(PlayerContext);
 
 export function PlayerProvider({ children }) {
-  const [authed, setAuthed] = useState(true);
+  const [authed, setAuthed] = useState(false);
   const [plan, setPlan] = useState("premium");
   const [library, setLibrary] = useState(PREVIEW ? SAMPLE_TRACKS : []);
   const [playlists, setPlaylists] = useState(PREVIEW ? SAMPLE_PLAYLISTS : []);
@@ -42,6 +41,22 @@ export function PlayerProvider({ children }) {
   const limits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.basic;
 
   const track = library.find((t) => t.id === current) || null;
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const user = await api.getUser();   // sends cookie automatically via credentials: "include"
+        if (alive) {
+          setPlan(user.has_basic_plan ? "basic" : "premium");
+          setAuthed(true);
+        }
+      } catch {
+        // no valid cookie / expired token — stays on the login screen, which is correct
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -118,7 +133,7 @@ export function PlayerProvider({ children }) {
         ? api.signup({ email, password, plan: chosen, username })
         : api.login({ username, password }));
 
-      setPlan(user.plan || "basic");
+      setPlan(user.has_basic_plan ? "basic" : "premium");
       setAuthed(true);
     } 
     catch (err) {
@@ -164,6 +179,27 @@ export function PlayerProvider({ children }) {
 
     setPlaying(true);
   };
+
+  const deleteTrack = async (id) => {
+    try {
+      await api.deleteTrack(id);
+    }
+    catch (e) {
+      notify("Failed to delete track!");
+      return;
+    }
+
+    if (current === id) {
+      audioRef.current.pause();
+      audioRef.current.removeAttribute("src");
+
+      setCurrent(null);
+      setPlaying(false);
+    }
+
+    setLibrary(await api.listTracks());
+    setMenu(null);
+  }
 
   const togglePlay = async () => {
     const audioElement = audioRef.current;
@@ -229,7 +265,7 @@ export function PlayerProvider({ children }) {
 
   const addToPlaylist = async (trackId, playlistId) => {
     const playlist = playlists.find((playlist) => playlist.id === playlistId);
-    if (playlist && playlists.tracks.length >= limits.maxSongsPerPlaylist) {
+    if (playlist && playlist.tracks.length >= limits.maxSongsPerPlaylist) {
       notify(`Failed to add track! The basic only allows for ${limits.maxSongsPerPlaylist} songs per playlist!`);
       return;
     }
@@ -286,7 +322,7 @@ const value = {
     menu, openMenu: (trackId, e) => { e.stopPropagation(); setMenu({ trackId, x: e.clientX, y: e.clientY }); }, closeMenu: () => setMenu(null),
     expanded, expand: () => setExpanded(true), collapse: () => setExpanded(false),
     audioRef, getAnalyser, toast, notify,
-    handleAuth, playTrack, togglePlay, createPlaylist, uploadTrack,
+    handleAuth, playTrack, togglePlay, createPlaylist, uploadTrack, deleteTrack,
     addToPlaylist, removeFromPlaylist, upgrade, downgrade,
     setEqBand, resetEq, toggleFx,
 };

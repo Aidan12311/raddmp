@@ -17,7 +17,8 @@ Globals:
     Cors:
       AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
       AllowHeaders: "'content-type'"
-      AllowOrigin: "'*'"
+      AllowOrigin: "'http://localhost:3000'"
+      AllowCredentials: true
 
 Resources:
   ApplicationResourceGroup:
@@ -41,7 +42,8 @@ Resources:
       Cors:
         AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
         AllowHeaders: "'content-type'"
-        AllowOrigin: "'*'"
+        AllowOrigin: "'http://localhost:3000'"
+        AllowCredentials: true
       Auth:
         Authorizers:
           RaddAuthorizer:
@@ -196,6 +198,17 @@ Resources:
               - "*"
             MaxAge: 3000
 
+  Mp3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref Mp3Bucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Sub "${Mp3Bucket.Arn}/*"
+
   ImageBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -210,6 +223,17 @@ Resources:
             AllowedOrigins:
               - "*"
             MaxAge: 3000
+  
+  ImageBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ImageBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Sub "${ImageBucket.Arn}/*"
 
   CreateUser:
     Type: AWS::Serverless::Function
@@ -251,6 +275,7 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref UserTable
+          JWT_SECRET: !Ref JwtSecret
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref UserTable
