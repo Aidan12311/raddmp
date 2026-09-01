@@ -112,7 +112,7 @@ pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, sqs_clie
     //SECRET = JWT_SECRET
     //TODO Make the secret an environemnt variable
     let auth_token = create_jwt(&user, "JWT_SECRET")?;
-    let cookie_value = format!("auth_token={}; HttpOnly; Secure; SameSite=None; Path=/", auth_token);
+    let cookie_value = format!("auth_token={}; HttpOnly; Max-Age=3600; Secure; SameSite=None; Path=/", auth_token);
     let response_body = ResponseBody{message: "Created user".to_string()};
     let response = Response::builder()
         .status(201)
