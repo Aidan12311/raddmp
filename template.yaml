@@ -439,6 +439,30 @@ Resources:
             RestApiId: !Ref RaddGateway
             Path: /music/upload-url
             Method: POST
+            
+  Metrics:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      CodeUri: lambdas/metrics
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      Policies:
+      Policies:
+        - DynamoDBCrudPolicy:
+              TableName: !Ref UserTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MusicTable
+      Events:
+        Metrics:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /metrics
+            Method: GET
 
 Outputs:
   ApiUrl:
