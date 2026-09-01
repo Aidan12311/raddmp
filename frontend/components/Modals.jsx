@@ -170,22 +170,26 @@ function QueueModal() {
 }
 
 function TrackMenu() {
-  const { menu, closeMenu, playlists, playTrack, addToQueue, addToPlaylist } = usePlayer();
+  const { menu, closeMenu, playlists, playTrack, addToQueue, addToPlaylist, deleteTrack } = usePlayer();
   const [sub, setSub] = useState(false);
   const x = Math.min(menu.x, window.innerWidth - 210), y = Math.min(menu.y, window.innerHeight - 220);
-  
+
   return (
     <div className="fixed" style={{ left: x, top: y, zIndex: 65 }} onClick={(e) => e.stopPropagation()}>
       <div className="w-52 rounded-xl overflow-hidden py-1" style={{ ...frost("rgba(26,26,31,0.96)"), border: `1px solid ${C.line}` }}>
         <MenuItem label="Play now" onClick={() => { playTrack(menu.trackId); closeMenu(); }} />
         <MenuItem label="Add to queue" onClick={() => { addToQueue(menu.trackId); closeMenu(); }} />
         <MenuItem label="Add to playlist ▸" onClick={() => setSub((s) => !s)} />
+
         {sub && (
           <div className="mt-1 mx-1 rounded-lg py-1" style={{ background: "rgba(0,0,0,0.25)" }}>
             {playlists.length === 0 && <div className="px-3 py-1.5 text-[12px]" style={{ color: C.faint }}>No playlists</div>}
             {playlists.map((p) => <MenuItem key={p.id} small label={p.name} onClick={() => { addToPlaylist(menu.trackId, p.id); closeMenu(); }} />)}
           </div>
         )}
+
+        <div className="my-1 mx-2 h-px" style={{ background: C.line }} />
+        <MenuItem label="Delete song" danger onClick={() => { deleteTrack(menu.trackId); closeMenu(); }} />
       </div>
     </div>
   );

@@ -162,15 +162,15 @@ Resources:
             MaxAge: 3000
 
   Mp3BucketPolicy:
-  Type: AWS::S3::BucketPolicy
-  Properties:
-    Bucket: !Ref Mp3Bucket
-    PolicyDocument:
-      Statement:
-        - Effect: Allow
-          Principal: "*"
-          Action: "s3:GetObject"
-          Resource: !Sub "${Mp3Bucket.Arn}/*"
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref Mp3Bucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Sub "${Mp3Bucket.Arn}/*"
 
   ImageBucket:
     Type: AWS::S3::Bucket
@@ -186,6 +186,17 @@ Resources:
             AllowedOrigins:
               - "*"
             MaxAge: 3000
+  
+  ImageBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ImageBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: "s3:GetObject"
+            Resource: !Sub "${ImageBucket.Arn}/*"
 
   CreateUser:
     Type: AWS::Serverless::Function

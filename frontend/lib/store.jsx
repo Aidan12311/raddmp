@@ -133,7 +133,7 @@ export function PlayerProvider({ children }) {
         ? api.signup({ email, password, plan: chosen, username })
         : api.login({ username, password }));
 
-      setPlan(user.plan || "basic");
+      setPlan(user.has_basic_plan ? "basic" : "premium");
       setAuthed(true);
     } 
     catch (err) {
@@ -179,6 +179,27 @@ export function PlayerProvider({ children }) {
 
     setPlaying(true);
   };
+
+  const deleteTrack = async (id) => {
+    try {
+      await api.deleteTrack(id);
+    }
+    catch (e) {
+      notify("Failed to delete track!");
+      return;
+    }
+
+    if (current === id) {
+      audioRef.current.pause();
+      audioRef.current.removeAttribute("src");
+
+      setCurrent(null);
+      setPlaying(false);
+    }
+
+    setLibrary(await api.listTracks());
+    setMenu(null);
+  }
 
   const togglePlay = async () => {
     const audioElement = audioRef.current;
@@ -244,7 +265,7 @@ export function PlayerProvider({ children }) {
 
   const addToPlaylist = async (trackId, playlistId) => {
     const playlist = playlists.find((playlist) => playlist.id === playlistId);
-    if (playlist && playlists.tracks.length >= limits.maxSongsPerPlaylist) {
+    if (playlist && playlist.tracks.length >= limits.maxSongsPerPlaylist) {
       notify(`Failed to add track! The basic only allows for ${limits.maxSongsPerPlaylist} songs per playlist!`);
       return;
     }
@@ -301,7 +322,7 @@ const value = {
     menu, openMenu: (trackId, e) => { e.stopPropagation(); setMenu({ trackId, x: e.clientX, y: e.clientY }); }, closeMenu: () => setMenu(null),
     expanded, expand: () => setExpanded(true), collapse: () => setExpanded(false),
     audioRef, getAnalyser, toast, notify,
-    handleAuth, playTrack, togglePlay, createPlaylist, uploadTrack,
+    handleAuth, playTrack, togglePlay, createPlaylist, uploadTrack, deleteTrack,
     addToPlaylist, removeFromPlaylist, upgrade, downgrade,
     setEqBand, resetEq, toggleFx,
 };
