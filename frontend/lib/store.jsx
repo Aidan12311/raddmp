@@ -247,9 +247,13 @@ export function PlayerProvider({ children }) {
       });
     };
 
-    const durationSec = await getFileDuration(file);
-    const mp3Url = await api.uploadFile(file, "mp3");
-    const coverUrl = cover ? await api.uploadFile(cover, "image") : null;
+    // These three are independent of each other -- run them concurrently
+    // instead of waiting on each one before starting the next.
+    const [durationSec, mp3Url, coverUrl] = await Promise.all([
+      getFileDuration(file),
+      api.uploadFile(file, "mp3"),
+      cover ? api.uploadFile(cover, "image") : Promise.resolve(null),
+    ]);
 
     const newTrack = await api.createTrack({
       title: title || file.name.replace(/\.[^/.]+$/, ""),
