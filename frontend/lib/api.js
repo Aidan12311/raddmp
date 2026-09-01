@@ -17,8 +17,15 @@ async function request(path, options = {}) {
     ...options,
   });
   if (!res.ok) {
-    const errorText = await res.text().catch(() => "");
-    throw new Error(errorText || `Request failed: ${res.status}`);
+    let message = `Request failed: ${res.status}`;
+    try {
+      const body = await res.clone().json();
+      if (body?.message) message = body.message;
+    } catch {
+      const text = await res.text().catch(() => "");
+      if (text) message = text;
+    }
+    throw new Error(message);
   }
   return res.status === 204 ? null : res.json();
 }
