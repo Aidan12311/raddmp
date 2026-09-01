@@ -232,8 +232,6 @@ export function PlayerProvider({ children }) {
       });
     };
 
-    // These three are independent of each other -- run them concurrently
-    // instead of waiting on each one before starting the next.
     const [durationSec, mp3Url, coverUrl] = await Promise.all([
       getFileDuration(file),
       api.uploadFile(file, "mp3"),
@@ -248,8 +246,6 @@ export function PlayerProvider({ children }) {
       coverUrl
     });
 
-    // Append the track the create call already returned instead of
-    // re-fetching the whole library -- one round trip instead of two.
     setLibrary((prev) => [...prev, newTrack]);
     return newTrack;
   };
