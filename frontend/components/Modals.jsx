@@ -12,7 +12,6 @@ export function Overlays() {
       {modal?.type === "createPlaylist" && <CreatePlaylistModal />}
       {modal?.type === "upload" && <UploadModal />}
       {modal?.type === "addSongs" && <AddSongsModal playlistId={modal.playlistId} />}
-      {modal?.type === "queue" && <QueueModal />}
       {menu && <TrackMenu />}
     </>
   );
@@ -152,25 +151,8 @@ function AddSongsModal({ playlistId }) {
   );
 }
 
-function QueueModal() {
-  const { closeModal, queue, library, playTrack } = usePlayer();
-  const tracks = queue.map((id) => library.find((t) => t.id === id)).filter(Boolean);
-  return (
-    <Modal title={`Queue · ${tracks.length}`} onClose={closeModal}>
-      {tracks.length === 0 ? <p className="text-[13px] text-center py-6" style={{ color: C.sub }}>Nothing queued yet. Use a track's ⋯ menu to add.</p> : (
-        <div className="flex flex-col gap-1 max-h-80 overflow-y-auto radd-scroll">{tracks.map((t, i) => (
-          <button key={i} onClick={() => { playTrack(t.id); closeModal(); }} className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 text-left">
-            <span className="text-[12px] font-mono w-5 text-center" style={{ color: C.faint }}>{i + 1}</span>
-            <Artwork track={t} className="w-10 h-10 rounded-md shrink-0" />
-            <div className="min-w-0"><div className="text-[13px] font-medium truncate">{t.title}</div><div className="text-[11px] truncate" style={{ color: C.sub }}>{t.artist}</div></div>
-          </button>))}</div>
-      )}
-    </Modal>
-  );
-}
-
 function TrackMenu() {
-  const { menu, closeMenu, playlists, playTrack, addToQueue, addToPlaylist, deleteTrack } = usePlayer();
+  const { menu, closeMenu, playlists, playTrack, addToPlaylist, deleteTrack } = usePlayer();
   const [sub, setSub] = useState(false);
   const x = Math.min(menu.x, window.innerWidth - 210), y = Math.min(menu.y, window.innerHeight - 220);
 
@@ -178,7 +160,6 @@ function TrackMenu() {
     <div className="fixed" style={{ left: x, top: y, zIndex: 65 }} onClick={(e) => e.stopPropagation()}>
       <div className="w-52 rounded-xl overflow-hidden py-1" style={{ ...frost("rgba(26,26,31,0.96)"), border: `1px solid ${C.line}` }}>
         <MenuItem label="Play now" onClick={() => { playTrack(menu.trackId); closeMenu(); }} />
-        <MenuItem label="Add to queue" onClick={() => { addToQueue(menu.trackId); closeMenu(); }} />
         <MenuItem label="Add to playlist ▸" onClick={() => setSub((s) => !s)} />
 
         {sub && (
