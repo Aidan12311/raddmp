@@ -40,6 +40,25 @@ export function PlayerProvider({ children }) {
 
   const track = library.find((t) => t.id === current) || null;
 
+  // Fetch every playlist, then fetch each one's songs. Playlist rows come back
+  // without their tracks -- that's the two-Lambda split on the backend.
+  const loadPlaylists = async () => {
+    const lists = await api.listPlaylists();
+
+    return Promise.all(
+      lists.map(async (playlist) => {
+        try {
+          const tracks = await api.listPlaylistTracks(playlist.id);
+          return { ...playlist, tracks: tracks.map((t) => t.id) };
+        }
+        catch (e) {
+          console.error(`Failed to load tracks for playlist ${playlist.id}! Error: `, e);
+          return playlist;
+        }
+      })
+    );
+  };
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -58,14 +77,13 @@ export function PlayerProvider({ children }) {
 
   useEffect(() => {
     let alive = true;
-    
+
     (async () => {
       try {
         const tracks = await api.listTracks();
 
         if(alive) {
           setLibrary(tracks);
-          // setPlaylists(lists);
         }
       }
       catch(e) {
@@ -75,11 +93,37 @@ export function PlayerProvider({ children }) {
         if (alive) {
           setLoading(false);
         }
-      }  
+      }
     })();
-  
+
     return () => { alive = false; };
   }, []);
+
+  // Playlist routes sit behind RaddAuthorizer, so this waits for a valid
+  // session instead of firing on mount and 401ing.
+  useEffect(() => {
+    if (!authed) {
+      setPlaylists([]);
+      return;
+    }
+
+    let alive = true;
+
+    (async () => {
+      try {
+        const lists = await loadPlaylists();
+
+        if (alive) {
+          setPlaylists(lists);
+        }
+      }
+      catch (e) {
+        console.error("Failed to load playlists! Error: ", e);
+      }
+    })();
+
+    return () => { alive = false; };
+  }, [authed]);
 
   useEffect(() => {
     const audioElement = audioRef.current;
@@ -102,17 +146,17 @@ export function PlayerProvider({ children }) {
     };
   }, [audioRef]);
 
-  useEffect(() => { 
+  useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.volume = vol; 
+      audioRef.current.volume = vol;
     }
   }, [vol, audioRef]);
-  
-  useEffect(() => { 
-    const c = () => setMenu(null); 
-    
-    window.addEventListener("click", c); 
-    return () => window.removeEventListener("click", c); }, 
+
+  useEffect(() => {
+    const c = () => setMenu(null);
+
+    window.addEventListener("click", c);
+    return () => window.removeEventListener("click", c); },
   []);
 
   const seek = (seconds) => {
@@ -133,7 +177,7 @@ export function PlayerProvider({ children }) {
 
       setPlan(user.has_basic_plan ? "basic" : "premium");
       setAuthed(true);
-    } 
+    }
     catch (err) {
       if (err.message?.includes("401")) {
         notify(mode === "signup" ? "Could not create account" : "Invalid username or password");
@@ -198,6 +242,15 @@ export function PlayerProvider({ children }) {
     // Drop it from local state instead of re-fetching the whole library --
     // the delete already told us it succeeded, no need for a second round trip.
     setLibrary((prev) => prev.filter((t) => t.id !== id));
+
+    // The song is gone from every playlist server-side too, so mirror that here.
+    setPlaylists((prev) =>
+      prev.map((playlist) => ({
+        ...playlist,
+        tracks: playlist.tracks.filter((trackId) => trackId !== id),
+      }))
+    );
+
     setMenu(null);
   }
 
@@ -210,7 +263,7 @@ export function PlayerProvider({ children }) {
     if (playing) {
       audioElement.pause();
       setPlaying(false);
-    } 
+    }
     else {
       await audioElement.play().catch(() => {});
       setPlaying(true);
@@ -218,22 +271,36 @@ export function PlayerProvider({ children }) {
   };
 
   const createPlaylist = async (name) => {
-    // TODO: await api.createPlaylist(name); setPlaylists(await api.listPlaylists());
     if (playlists.length >= limits.maxPlaylists) {
       notify(`Failed to create playlist! The basic plan is limited to ${limits.maxPlaylists} playlists!`);
       return;
     }
-    
-    setModal(null);
+
+    try {
+      const playlist = await api.createPlaylist(name);
+
+      // The create call already returned the new playlist, and a brand new one
+      // has no songs -- no reason to re-fetch the whole list.
+      setPlaylists((prev) => [...prev, playlist]);
+      setModal(null);
+    }
+    catch (e) {
+      // The Lambda enforces the same cap, so this fires if local state drifted.
+      notify(e.message?.includes("403")
+        ? `Failed to create playlist! The basic plan is limited to ${limits.maxPlaylists} playlists!`
+        : "Failed to create playlist!");
+
+      console.error("Failed to create playlist! Error: ", e);
+    }
   };
-  
+
   const uploadTrack = async ({ file, cover, title, artist }) => {
     const getFileDuration = async (file) => {
       return new Promise((resolve) => {
         const url = URL.createObjectURL(file);
         const audio = new Audio();
         audio.preload = "metadata";
-        
+
         audio.onloadedmetadata = () => {
           URL.revokeObjectURL(url);
           resolve(Math.floor(audio.duration) || 0);
@@ -271,16 +338,52 @@ export function PlayerProvider({ children }) {
       notify(`Failed to add track! The basic only allows for ${limits.maxSongsPerPlaylist} songs per playlist!`);
       return;
     }
-    
-    // TODO: await api.addTrackToPlaylist(playlistId, trackId); setPlaylists(await api.listPlaylists());
+
+    if (playlist && playlist.tracks.includes(trackId)) {
+      notify("That song is already in this playlist!");
+      return;
+    }
+
+    try {
+      await api.addTrackToPlaylist(playlistId, trackId);
+
+      // Server appends to the end, so appending locally keeps the same order.
+      setPlaylists((prev) =>
+        prev.map((p) =>
+          p.id === playlistId ? { ...p, tracks: [...p.tracks, trackId] } : p
+        )
+      );
+
+      setModal(null);
+    }
+    catch (e) {
+      notify("Failed to add track to playlist!");
+      console.error("Failed to add track to playlist! Error: ", e);
+    }
   };
-  
+
   const removeFromPlaylist = async (trackId, playlistId) => {
-    // TODO: await api.removeTrackFromPlaylist(playlistId, trackId); setPlaylists(await api.listPlaylists());
+    try {
+      await api.removeTrackFromPlaylist(playlistId, trackId);
+
+      setPlaylists((prev) =>
+        prev.map((p) =>
+          p.id === playlistId
+            ? { ...p, tracks: p.tracks.filter((id) => id !== trackId) }
+            : p
+        )
+      );
+
+      setMenu(null);
+    }
+    catch (e) {
+      notify("Failed to remove track from playlist!");
+      console.error("Failed to remove track from playlist! Error: ", e);
+    }
   };
 
   const setEqBand = (i, v) => {
-    setEq((p) => p.map((x, xi) => (xi === i ? v : x))); 
+    setEq((p) => p.map((x, xi) => (xi === i ? v : x)));
     setBandGain(i, v);
   };
 

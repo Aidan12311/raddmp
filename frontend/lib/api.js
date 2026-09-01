@@ -1,5 +1,6 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 const MUSIC_ENDPOINT = process.env.NEXT_PUBLIC_API_MUSIC_ENDPOINT || "/music";
+const PLAYLIST_ENDPOINT = process.env.NEXT_PUBLIC_API_PLAYLIST_ENDPOINT || "/playlists";
 
 function toLength(seconds) {
   const minutes = Math.floor(seconds / 60);
@@ -38,6 +39,14 @@ function toTrack(musicJson) {
     streamUrl: musicJson.Mp3File && musicJson.Mp3File !== "none" ? musicJson.Mp3File : null,
     cover: musicJson.CoverImage && musicJson.CoverImage !== "none" ? musicJson.CoverImage : null,
     g1: "#67e8f9", g2: "#c084fc",
+  };
+}
+
+function toPlaylist(playlistJson) {
+  return {
+    id: playlistJson.PlaylistId,
+    name: playlistJson.Name,
+    tracks: [],
   };
 }
 
@@ -87,7 +96,7 @@ export async function uploadFile(file, fileType) {
     headers: { "Content-Type" : file.type },
     body: file
   });
-  
+
   if (!putCall.ok) {
     throw new Error(`S3 upload failed! Error status code: ${putCall.status}`);
   }
@@ -95,12 +104,46 @@ export async function uploadFile(file, fileType) {
   return fileUrl;
 }
 
-export async function listPlaylists() { return []; }
+export async function listPlaylists() {
+  const res = await request(PLAYLIST_ENDPOINT);
+  return (res.playlists ?? []).map(toPlaylist);
+}
 
-export const login = (body) => 
+export async function listPlaylistTracks(playlistId) {
+  const res = await request(`${PLAYLIST_ENDPOINT}/${playlistId}/music`);
+  return (res.music ?? []).map(toTrack);
+}
+
+export const createPlaylist = (name) =>
+  request(PLAYLIST_ENDPOINT, {
+    method: "POST",
+    body: JSON.stringify({ Name: name }),
+  }).then(toPlaylist);
+
+export const renamePlaylist = (playlistId, name) =>
+  request(`${PLAYLIST_ENDPOINT}/${playlistId}`, {
+    method: "PUT",
+    body: JSON.stringify({ Name: name }),
+  }).then(toPlaylist);
+
+export const deletePlaylist = (playlistId) =>
+  request(`${PLAYLIST_ENDPOINT}/${playlistId}`, { method: "DELETE" });
+
+export const addTrackToPlaylist = (playlistId, trackId) =>
+  request(`${PLAYLIST_ENDPOINT}/${playlistId}/music`, {
+    method: "POST",
+    body: JSON.stringify({ MusicId: trackId }),
+  });
+
+export const removeTrackFromPlaylist = (playlistId, trackId) =>
+  request(`${PLAYLIST_ENDPOINT}/${playlistId}/music/${trackId}`, {
+    method: "DELETE",
+  });
+
+export const login = (body) =>
   request("/login", { method: "POST", body: JSON.stringify(body) });
 
-export const signup = (body) => 
+export const signup = (body) =>
   request("/users", { method: "POST", body: JSON.stringify(body) });
 
 export const getUser = () => request("/users", { method: "GET" });

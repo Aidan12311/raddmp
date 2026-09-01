@@ -47,6 +47,19 @@ Resources:
         AllowHeaders: "'content-type'"
         AllowOrigin: "'http://localhost:3000'"
         AllowCredentials: true
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'http://localhost:3000'"
+              Access-Control-Allow-Headers: "'content-type'"
+              Access-Control-Allow-Credentials: "'true'"
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'http://localhost:3000'"
+              Access-Control-Allow-Headers: "'content-type'"
+              Access-Control-Allow-Credentials: "'true'"
       Auth:
         Authorizers:
           RaddAuthorizer:

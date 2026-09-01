@@ -83,6 +83,10 @@ def _decimal_default(obj):
 def _response(status_code, body):
     return {
         "statusCode": status_code,
-        "headers": {"Content-Type": "application/json"},
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "http://localhost:3000",
+            "Access-Control-Allow-Credentials": True,
+        },
         "body": json.dumps(body, default=_decimal_default),
     }

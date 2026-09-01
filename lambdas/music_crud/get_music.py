@@ -30,5 +30,5 @@ def _response(status_code, body):
             "Access-Control-Allow-Origin": "http://localhost:3000",
             "Access-Control-Allow-Credentials": "true",
         },
-        "body": json.dumps(body),
+        "body": json.dumps(body, default=str),
     }
