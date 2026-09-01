@@ -53,7 +53,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     //generate auth token and send request
     let auth_token = create_jwt(&user, "JWT_SECRET")?;
     // Max-Age=3600;
-    let cookie_value = format!("auth_token={}; HttpOnly; Secure; SameSite=None; Path=/", auth_token);
+    let cookie_value = format!("auth_token={}; HttpOnly; Max-Age=3600; Secure; SameSite=None; Path=/", auth_token);
     let response_body = ResponseBody{message: "Logged in".to_string()};
     let response = Response::builder()
         .status(200)

@@ -8,12 +8,25 @@ import { PlayerBar } from "./PlayerBar";
 import { NowPlaying } from "./NowPlaying";
 import { Overlays } from "./Modals";
 import { AuthScreen } from "./AuthScreen";
+import { TopBar } from "./ui";
 
 /* The persistent frame. It never unmounts as you navigate — only {children}
   (the current route's page) swaps. That's why the player keeps playing across
    pages: the <audio> element and player state live here, above the router. */
 export function AppShell({ children }) {
-  const { authed, audioRef, getAnalyser, playing, track, expanded, toast } = usePlayer();
+  const { authed, username, loading, audioRef, getAnalyser, playing, track, expanded, toast } = usePlayer();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ color: C.sub }}>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-6 h-6 rounded-full border-2 animate-spin"
+            style={{ borderColor: C.line, borderTopColor: C.a1 }} />
+          <span className="text-sm">Loading…</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

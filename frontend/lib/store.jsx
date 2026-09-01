@@ -12,6 +12,7 @@ export const usePlayer = () => useContext(PlayerContext);
 
 export function PlayerProvider({ children }) {
   const [authed, setAuthed] = useState(false);
+  const [username, setUsername] = useState("");
   const [plan, setPlan] = useState("premium");
   const [library, setLibrary] = useState(PREVIEW ? SAMPLE_TRACKS : []);
   const [playlists, setPlaylists] = useState(PREVIEW ? SAMPLE_PLAYLISTS : []);
@@ -44,42 +45,31 @@ export function PlayerProvider({ children }) {
 
   useEffect(() => {
     let alive = true;
-    (async () => {
-      try {
-        const user = await api.getUser();   // sends cookie automatically via credentials: "include"
-        if (alive) {
-          setPlan(user.has_basic_plan ? "basic" : "premium");
-          setAuthed(true);
-        }
-      } catch {
-        // no valid cookie / expired token — stays on the login screen, which is correct
-      }
-    })();
-    return () => { alive = false; };
-  }, []);
 
-  useEffect(() => {
-    let alive = true;
-    
     (async () => {
-      try {
-        const tracks = await api.listTracks();
+      const [sessionResult, libraryResult] = await Promise.allSettled([
+        api.getUser(),
+        api.listTracks(),
+      ]);
 
-        if(alive) {
-          setLibrary(tracks);
-          // setPlaylists(lists);
-        }
+      if (!alive) return;
+
+      if (sessionResult.status === "fulfilled") {
+        const user = sessionResult.value;
+        setUsername(user.username);
+        setPlan(user.has_basic_plan ? "basic" : "premium");
+        setAuthed(true);
       }
-      catch(e) {
-        console.error("Failed to load library! Error: ", e);
+
+      if (libraryResult.status === "fulfilled") {
+        setLibrary(libraryResult.value);
+      } else {
+        console.error("Failed to load library! Error: ", libraryResult.reason);
       }
-      finally {
-        if (alive) {
-          setLoading(false);
-        }
-      }  
+
+      setLoading(false);
     })();
-  
+
     return () => { alive = false; };
   }, []);
 
@@ -127,27 +117,22 @@ export function PlayerProvider({ children }) {
     setElapsed(seconds);
   };
 
+  // function validateFields({ mode, username, email, password }) {
+  //   const errs = {};
+  //   if (!username.trim()) errs.username = "Username is required";
+  //   if (mode === "signup" && !email.trim()) errs.email = "Email is required";
+  //   if (!password) errs.password = "Password is required";
+  //   return errs;
+  // }
+
   const handleAuth = async ({ email, password, plan: chosen, mode, username }) => {
-    try {
-      const user = await (mode === "signup"
-        ? api.signup({ email, password, plan: chosen, username })
-        : api.login({ username, password }));
+    const user = await (mode === "signup"
+      ? api.signup({ email, password, plan: chosen, username })
+      : api.login({ username, password }));
 
-      setPlan(user.has_basic_plan ? "basic" : "premium");
-      setAuthed(true);
-    } 
-    catch (err) {
-      if (err.message?.includes("401")) {
-        notify(mode === "signup" ? "Could not create account" : "Invalid username or password");
-      } else if (err.message?.includes("409")) {
-        notify("An account with that username already exists");
-      } else {
-        notify("Something went wrong — please try again");
-      }
-
-      console.error(`${mode} failed: `, err);
-    }
-  };
+    setPlan(user.has_basic_plan ? "basic" : "premium");
+    setAuthed(true);
+  }
 
   const playTrack = async (id) => {
     const track = library.find((track) => track.id === id);
