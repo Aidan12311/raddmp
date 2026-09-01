@@ -149,16 +149,16 @@ Resources:
   Mp3Bucket:
     Type: AWS::S3::Bucket
     Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
       CorsConfiguration:
         CorsRules:
-          - AllowedHeaders:
-              - "*"
-            AllowedMethods:
-              - GET
-              - PUT
-              - HEAD
-            AllowedOrigins:
-              - "*"
+          - AllowedHeaders: ["*"]
+            AllowedMethods: [GET, PUT, HEAD]
+            AllowedOrigins: ["*"]
             MaxAge: 3000
 
   Mp3BucketPolicy:
@@ -175,16 +175,16 @@ Resources:
   ImageBucket:
     Type: AWS::S3::Bucket
     Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
       CorsConfiguration:
         CorsRules:
-          - AllowedHeaders:
-              - "*"
-            AllowedMethods:
-              - GET
-              - PUT
-              - HEAD
-            AllowedOrigins:
-              - "*"
+          - AllowedHeaders: ["*"]
+            AllowedMethods: [GET, PUT, HEAD]
+            AllowedOrigins: ["*"]
             MaxAge: 3000
   
   ImageBucketPolicy:
