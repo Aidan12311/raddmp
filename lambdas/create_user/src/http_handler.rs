@@ -1,6 +1,6 @@
 use lambda_http::{Body, Error, Request, RequestPayloadExt, Response};
 use lambda_http::http::header::{HeaderValue, SET_COOKIE};
-use crate::helpers::{create_dynamo_client, create_jwt, create_sqs_client, hash, json_response, text_response};
+use crate::helpers::{create_jwt, hash, json_response, text_response};
 use crate::models::{QueueMessage, RequestBody, User, ResponseBody};
 use aws_sdk_dynamodb::types::AttributeValue;
 use uuid::Uuid;
@@ -11,7 +11,7 @@ use fancy_regex::Regex;
 Creates a user in the database
 Takes in a request object like this {username: String, password: String, email: String}
 */
-pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
+pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, sqs_client: &aws_sdk_sqs::Client, event: Request) -> Result<Response<Body>, Error> {
     //validate the request body 
     let req = match event.payload::<RequestBody>() {
         Ok(Some(req)) => req,
@@ -46,9 +46,6 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         has_basic_plan: true,
         is_verified: false
     };
-
-    //create dynamo client
-    let client = create_dynamo_client().await;
 
     //check database for existing username
     let result = client
@@ -98,12 +95,12 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         email: user.email.clone(),
         verification_token,
     })?;
-    //genreate sqs client and send message to queue
-    let client = create_sqs_client().await;
+    
+    //send message to queue
     let queue_url = std::env::var("QUEUE_URL")
         .map_err(|_| Error::from("QUEUE_URL environment variable not set"))?;
 
-    let _result = client
+    let _result = sqs_client
         .send_message()
         .queue_url(queue_url)
         .message_body(message)

@@ -18,9 +18,6 @@ function mapErrorToField(message) {
 const FieldError = ({ text }) =>
     text ? <p className="text-[11px] mt-1" style={{ color: "#f87171" }}>{text}</p> : null;
 
-/* The login / signup screen. Submitting calls handleAuth in the store, which is
-   an inert stub — so nothing happens until you wire it. On success your wired
-   handleAuth calls setAuthed(true), which reveals the app. */
 export function AuthScreen() {
   const { handleAuth } = usePlayer();
   const [username, setUsername] = useState("");

@@ -1,5 +1,5 @@
 use lambda_http::{Body, Error, Request, RequestPayloadExt, Response};
-use crate::helpers::{create_dynamo_client, create_jwt, hash, text_response, json_response};
+use crate::helpers::{create_jwt, hash, text_response, json_response};
 use crate::models::{RequestBody, User, ResponseBody};
 use lambda_http::http::header::{HeaderValue, SET_COOKIE};
 use aws_sdk_dynamodb::types::AttributeValue;
@@ -9,7 +9,7 @@ use serde_dynamo::from_item;
 Validates if a user exists in the database and returns an auth token
 Takes in a request object like this {username: "", password: ""}
  */
-pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
+pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: Request) -> Result<Response<Body>, Error> {
     //validate the request body isnt empty and has the proper object structure
     let req = match event.payload::<RequestBody>() {
         Ok(Some(req)) => req,
@@ -24,8 +24,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         },
     };
 
-    //create a dynamo client and query the users table
-    let client = create_dynamo_client().await;
+    //query the users table
     let result = client.query().table_name("RaddUsersTable").index_name("UsernameIndex")
         .key_condition_expression("username = :username")
         .expression_attribute_values(":username", AttributeValue::S(req.username.to_string()))

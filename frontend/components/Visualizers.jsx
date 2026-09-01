@@ -5,6 +5,7 @@ import { C, BRAND, EQ_BANDS, hexA, lerpColor } from "../lib/theme";
 
 export const AmbientBackground = memo(function AmbientBackground({ getAnalyser, playing }) {
   const cvs = useRef(null); const raf = useRef(0); const st = useRef(null);
+  
   useEffect(() => {
     const canvas = cvs.current; if (!canvas) return;
     const ctx = canvas.getContext("2d");

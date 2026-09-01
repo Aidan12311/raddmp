@@ -5,7 +5,6 @@ import { createContext, useContext, useState, useEffect, useRef } from "react";
 import * as api from "./api";
 import { useAnalyser } from "./audio";
 import { PLAN_LIMITS } from "./plans";
-import { PREVIEW, SAMPLE_TRACKS, SAMPLE_PLAYLISTS } from "./sample";
 
 const PlayerContext = createContext(null);
 export const usePlayer = () => useContext(PlayerContext);
@@ -14,10 +13,9 @@ export function PlayerProvider({ children }) {
   const [authed, setAuthed] = useState(false);
   const [username, setUsername] = useState("");
   const [plan, setPlan] = useState("premium");
-  const [library, setLibrary] = useState(PREVIEW ? SAMPLE_TRACKS : []);
-  const [playlists, setPlaylists] = useState(PREVIEW ? SAMPLE_PLAYLISTS : []);
-  const [loading, setLoading] = useState(!PREVIEW);
-  const [queue, setQueue] = useState([]);
+  const [library, setLibrary] = useState([]);
+  const [playlists, setPlaylists] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [current, setCurrent] = useState(null);
   const [duration, setDuration] = useState(0);
@@ -182,7 +180,9 @@ export function PlayerProvider({ children }) {
       setPlaying(false);
     }
 
-    setLibrary(await api.listTracks());
+    // Drop it from local state instead of re-fetching the whole library --
+    // the delete already told us it succeeded, no need for a second round trip.
+    setLibrary((prev) => prev.filter((t) => t.id !== id));
     setMenu(null);
   }
 
@@ -244,7 +244,9 @@ export function PlayerProvider({ children }) {
       coverUrl
     });
 
-    setLibrary(await api.listTracks());
+    // Append the track the create call already returned instead of
+    // re-fetching the whole library -- one round trip instead of two.
+    setLibrary((prev) => [...prev, newTrack]);
     return newTrack;
   };
 
@@ -300,7 +302,7 @@ export function PlayerProvider({ children }) {
 
 const value = {
     authed, plan, isPremium, loading,
-    library, playlists, queue,
+    library, playlists,
     current, track, playing, elapsed, seek, duration,
     eq, fx, vol, setVol,
     modal, openModal: setModal, closeModal: () => setModal(null),

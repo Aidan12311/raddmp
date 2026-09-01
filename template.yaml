@@ -12,7 +12,10 @@ Parameters:
 Globals:
   Function:
     Timeout: 3
-    MemorySize: 128
+    # Lambda CPU/network throughput scale with memory -- 128MB is the
+    # minimum possible allocation and was slowing down both cold starts and
+    # steady-state execution (AWS SDK init, boto3 import, JSON/JWT work).
+    MemorySize: 256
   Api:
     Cors:
       AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
@@ -145,6 +148,43 @@ Resources:
       KeySchema:
         - AttributeName: MusicId
           KeyType: HASH
+
+  PlaylistTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: RaddPlaylistTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PlaylistId
+          AttributeType: S
+        - AttributeName: UserId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PlaylistId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: UserIdIndex
+          KeySchema:
+            - AttributeName: UserId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  PlaylistMusicTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: RaddPlaylistMusicTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PlaylistId
+          AttributeType: S
+        - AttributeName: MusicId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PlaylistId
+          KeyType: HASH
+        - AttributeName: MusicId
+          KeyType: RANGE
 
   Mp3Bucket:
     Type: AWS::S3::Bucket
@@ -436,6 +476,217 @@ Resources:
             RestApiId: !Ref RaddGateway
             Path: /music/upload-url
             Method: POST
+            
+  Metrics:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      CodeUri: lambdas/metrics
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      Policies:
+      Policies:
+        - DynamoDBCrudPolicy:
+              TableName: !Ref UserTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MusicTable
+      Events:
+        Metrics:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /metrics
+            Method: GET
+
+  CreatePlaylist:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/playlist_crud/
+      Handler: create_playlist.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref PlaylistTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PlaylistTable
+      Events:
+        CreatePlaylist:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /playlists
+            Method: POST
+            Auth:
+              Authorizer: RaddAuthorizer
+
+  ListPlaylists:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/playlist_crud/
+      Handler: list_playlists.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref PlaylistTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PlaylistTable
+      Events:
+        ListPlaylists:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /playlists
+            Method: GET
+            Auth:
+              Authorizer: RaddAuthorizer
+
+  ListPlaylistMusic:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/playlist_crud/
+      Handler: list_playlist_music.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          PLAYLIST_TABLE_NAME: !Ref PlaylistTable
+          PLAYLIST_MUSIC_TABLE_NAME: !Ref PlaylistMusicTable
+          MUSIC_TABLE_NAME: !Ref MusicTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PlaylistTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref PlaylistMusicTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref MusicTable
+      Events:
+        ListPlaylistMusic:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /playlists/{playlistId}/music
+            Method: GET
+            Auth:
+              Authorizer: RaddAuthorizer
+
+  AddMusicToPlaylist:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/playlist_crud/
+      Handler: add_music_to_playlist.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          PLAYLIST_TABLE_NAME: !Ref PlaylistTable
+          PLAYLIST_MUSIC_TABLE_NAME: !Ref PlaylistMusicTable
+          MUSIC_TABLE_NAME: !Ref MusicTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PlaylistTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PlaylistMusicTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref MusicTable
+      Events:
+        AddMusicToPlaylist:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /playlists/{playlistId}/music
+            Method: POST
+            Auth:
+              Authorizer: RaddAuthorizer
+
+  RemoveMusicFromPlaylist:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/playlist_crud/
+      Handler: remove_music_from_playlist.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          PLAYLIST_TABLE_NAME: !Ref PlaylistTable
+          PLAYLIST_MUSIC_TABLE_NAME: !Ref PlaylistMusicTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref PlaylistTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PlaylistMusicTable
+      Events:
+        RemoveMusicFromPlaylist:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /playlists/{playlistId}/music/{musicId}
+            Method: DELETE
+            Auth:
+              Authorizer: RaddAuthorizer
+
+  UpdatePlaylist:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/playlist_crud/
+      Handler: update_playlist.lambda_handler
+      Runtime: python3.13
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref PlaylistTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PlaylistTable
+      Events:
+        UpdatePlaylist:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /playlists/{playlistId}
+            Method: PUT
+            Auth:
+              Authorizer: RaddAuthorizer
+
+  DeletePlaylist:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambdas/playlist_crud/
+      Handler: delete_playlist.lambda_handler
+      Runtime: python3.13
+      Timeout: 30
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          PLAYLIST_TABLE_NAME: !Ref PlaylistTable
+          PLAYLIST_MUSIC_TABLE_NAME: !Ref PlaylistMusicTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PlaylistTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PlaylistMusicTable
+      Events:
+        DeletePlaylist:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /playlists/{playlistId}
+            Method: DELETE
+            Auth:
+              Authorizer: RaddAuthorizer
 
 Outputs:
   ApiUrl:

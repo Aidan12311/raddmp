@@ -72,7 +72,7 @@ def _build_allow_policy(principal_id: str, method_arn: str, claims: dict):
                 {
                     "Action": "execute-api:Invoke",
                     "Effect": "Allow",
-                    "Resource": method_arn,
+                    "Resource": method_arn.split("/")[0] + "/*",
                 }
             ],
         },

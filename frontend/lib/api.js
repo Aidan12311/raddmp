@@ -58,7 +58,7 @@ export async function getTrack(id) {
   return toTrack(track);
 }
 
-export const createTrack = ( {title, artist, durationSec, mp3Url, coverUrl }) => 
+export const createTrack = ( {title, artist, durationSec, mp3Url, coverUrl }) =>
   request(MUSIC_ENDPOINT, {
     method: "POST",
     body: JSON.stringify({
@@ -68,7 +68,7 @@ export const createTrack = ( {title, artist, durationSec, mp3Url, coverUrl }) =>
       Mp3File: mp3Url || "none",
       CoverImage: coverUrl || "none"
     }),
-  });
+  }).then(toTrack);
 
 export const updateTrack = (id, fields) =>
   request(`${MUSIC_ENDPOINT}/${id}`, {
