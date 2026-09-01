@@ -42,8 +42,8 @@ function toTrack(musicJson) {
 }
 
 export async function listTracks() {
-  const tracks = await request(MUSIC_ENDPOINT);
-  return Array.isArray(tracks) ? tracks.map(toTrack) : [];
+  const res = await request(MUSIC_ENDPOINT);
+  return (res.items ?? []).map(toTrack);
 }
 
 export async function getTrack(id) {
@@ -51,7 +51,7 @@ export async function getTrack(id) {
   return toTrack(track);
 }
 
-export const createTrack = ( {title, artist, durationSec, mp3Url, coverUrl }) => 
+export const createTrack = ( {title, artist, durationSec, mp3Url, coverUrl }) =>
   request(MUSIC_ENDPOINT, {
     method: "POST",
     body: JSON.stringify({
@@ -61,7 +61,7 @@ export const createTrack = ( {title, artist, durationSec, mp3Url, coverUrl }) =>
       Mp3File: mp3Url || "none",
       CoverImage: coverUrl || "none"
     }),
-  });
+  }).then(toTrack);
 
 export const updateTrack = (id, fields) =>
   request(`${MUSIC_ENDPOINT}/${id}`, {
