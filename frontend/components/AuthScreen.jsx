@@ -5,9 +5,6 @@ import { usePlayer } from "../lib/store";
 import { C, frost } from "../lib/theme";
 import { Logo, Field } from "./ui";
 
-/* The login / signup screen. Submitting calls handleAuth in the store, which is
-   an inert stub — so nothing happens until you wire it. On success your wired
-   handleAuth calls setAuthed(true), which reveals the app. */
 export function AuthScreen() {
   const { handleAuth } = usePlayer();
   const [username, setUsername] = useState("");
@@ -62,7 +59,6 @@ export function AuthScreen() {
             <button className="font-semibold" style={{ color: C.a1 }} onClick={() => setMode(mode === "login" ? "signup" : "login")}>{mode === "login" ? "Create one" : "Sign in"}</button>
           </div>
         </div>
-        <p className="text-center text-[11px] mt-5" style={{ color: C.faint }}>Shell — auth is not connected yet.</p>
       </div>
     </div>
   );

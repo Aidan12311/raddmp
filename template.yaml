@@ -12,7 +12,10 @@ Parameters:
 Globals:
   Function:
     Timeout: 3
-    MemorySize: 128
+    # Lambda CPU/network throughput scale with memory -- 128MB is the
+    # minimum possible allocation and was slowing down both cold starts and
+    # steady-state execution (AWS SDK init, boto3 import, JSON/JWT work).
+    MemorySize: 256
   Api:
     Cors:
       AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
@@ -186,16 +189,16 @@ Resources:
   Mp3Bucket:
     Type: AWS::S3::Bucket
     Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
       CorsConfiguration:
         CorsRules:
-          - AllowedHeaders:
-              - "*"
-            AllowedMethods:
-              - GET
-              - PUT
-              - HEAD
-            AllowedOrigins:
-              - "*"
+          - AllowedHeaders: ["*"]
+            AllowedMethods: [GET, PUT, HEAD]
+            AllowedOrigins: ["*"]
             MaxAge: 3000
 
   Mp3BucketPolicy:
@@ -212,16 +215,16 @@ Resources:
   ImageBucket:
     Type: AWS::S3::Bucket
     Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
       CorsConfiguration:
         CorsRules:
-          - AllowedHeaders:
-              - "*"
-            AllowedMethods:
-              - GET
-              - PUT
-              - HEAD
-            AllowedOrigins:
-              - "*"
+          - AllowedHeaders: ["*"]
+            AllowedMethods: [GET, PUT, HEAD]
+            AllowedOrigins: ["*"]
             MaxAge: 3000
   
   ImageBucketPolicy:

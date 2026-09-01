@@ -1,14 +1,14 @@
 use std::env;
 
 use lambda_http::{Body, Error, Request, RequestExt, Response};
-use crate::helpers::{text_response, verify_jwt, create_dynamo_client};
+use crate::helpers::{text_response, verify_jwt};
 use aws_sdk_dynamodb::{types::AttributeValue};
 
 /*
 Verifies a user in the database
 Takes in a jwt in the route parameters
  */
-pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
+pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: Request) -> Result<Response<Body>, Error> {
     //validate the token is in the route
     let query_params = event.query_string_parameters();
     let token = query_params.first("token").unwrap_or("");
@@ -30,8 +30,7 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
         }
     };
 
-    //create dynamo client and update user verified field in database
-    let client = create_dynamo_client().await;
+    //update user verified field in database
     client
         .update_item()
         .table_name("RaddUsersTable")

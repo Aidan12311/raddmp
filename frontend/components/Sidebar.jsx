@@ -14,7 +14,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex flex-col w-60 shrink-0 px-3 py-4" style={{ ...frost(C.bg2 + "cc"), borderRight: `1px solid ${C.lineSoft}` }}>
+    <aside className="hidden md:flex flex-col w-60 shrink-0 px-3 pt-4" style={{ ...frost(C.bg2 + "cc"), borderRight: `1px solid ${C.lineSoft}`, paddingBottom: 112 }}>
       <div className="flex items-center gap-2.5 px-2 mb-6"><Logo /><span className="font-semibold tracking-tight">RADDMP</span></div>
 
       <nav className="flex flex-col gap-0.5">

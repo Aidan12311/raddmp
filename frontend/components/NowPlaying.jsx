@@ -3,13 +3,12 @@
 import { usePlayer } from "../lib/store";
 import { C, frost, fmtTime, hexA, EQ_BANDS } from "../lib/theme";
 import { Spectrum, EQCurve } from "./Visualizers";
-import { PlayIcon, PauseIcon, Toggle, VSlider, LockIcon } from "./ui";
+import { PlayIcon, PauseIcon, Toggle, VSlider } from "./ui";
 
-/* Full-screen overlay. EQ sliders + effect toggles are UI state; when you wire
-   the DSP, send their values from setEqBand / toggleFx in the store. */
 export function NowPlaying() {
   const { track, playing, elapsed, togglePlay, collapse, getAnalyser,
-    eq, setEqBand, resetEq, fx, toggleFx, vol, setVol, isPremium, shareLink } = usePlayer();
+    eq, setEqBand, resetEq, fx, toggleFx, vol, setVol, isPremium, } = usePlayer();
+  
   if (!track) return null;
 
   return (
