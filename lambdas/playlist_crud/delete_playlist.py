@@ -71,7 +71,7 @@ def _response(status_code, body):
         "statusCode": status_code,
         "headers": {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "http://localhost:3000",
+            "Access-Control-Allow-Origin": "https://main.d3hoq6y7t1r914.amplifyapp.com",
             "Access-Control-Allow-Credentials": True,
         },
         "body": json.dumps(body, default=str),
