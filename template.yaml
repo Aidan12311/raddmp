@@ -47,6 +47,19 @@ Resources:
         AllowHeaders: "'content-type'"
         AllowOrigin: "'https://main.d3hoq6y7t1r914.amplifyapp.com'"
         AllowCredentials: true
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'http://localhost:3000'"
+              Access-Control-Allow-Headers: "'content-type'"
+              Access-Control-Allow-Credentials: "'true'"
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'http://localhost:3000'"
+              Access-Control-Allow-Headers: "'content-type'"
+              Access-Control-Allow-Credentials: "'true'"
       Auth:
         Authorizers:
           RaddAuthorizer:
@@ -578,6 +591,31 @@ Resources:
             Method: GET
             Auth:
               Authorizer: RaddAuthorizer
+
+  UpdateUserPlan:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: rust-cargolambda
+    Properties:
+      CodeUri: lambdas/update_plan
+      Handler: bootstrap
+      Runtime: provided.al2023
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UserTable
+          JWT_SECRET: !Ref JwtSecret
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UserTable
+      Events:
+        GetUser:
+          Type: Api
+          Properties:
+            RestApiId: !Ref RaddGateway
+            Path: /users/update/plan
+            Method: POST
 
   AddMusicToPlaylist:
     Type: AWS::Serverless::Function

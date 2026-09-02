@@ -1,7 +1,7 @@
 export const PLAN_LIMITS = {
     basic: {
-        maxPlaylists: 1,
-        maxSongsPerPlaylist: 1,
+        maxPlaylists: 3,
+        maxSongsPerPlaylist: 5,
         effects: ["reverb", "chorus"],
     },
 

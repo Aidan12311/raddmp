@@ -33,5 +33,5 @@ def _response(event, status_code, body):
             "Access-Control-Allow-Credentials": "true",
             "Vary": "Origin",
         },
-        "body": json.dumps(body),
+        "body": json.dumps(body, default=str),
     }

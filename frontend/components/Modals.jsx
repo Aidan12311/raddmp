@@ -133,7 +133,7 @@ function AddSongsModal({ playlistId }) {
   }
 
   return (
-    <Modal wide title={`Add songs · ${playlist.name}`} onClose={closeModal} footer={<BtnPrimary onClick={closeModal}>Done</BtnPrimary>}>
+    <Modal wide title={`Add/Remove Songs · ${playlist.name}`} onClose={closeModal} footer={<BtnPrimary onClick={closeModal}>Done</BtnPrimary>}>
       <div className="flex flex-col gap-1 max-h-80 overflow-y-auto radd-scroll">
         {library.length === 0 && <p className="text-[13px] text-center py-6" style={{ color: C.sub }}>Your library is empty.</p>}
         {library.map((track) => {

@@ -21,7 +21,7 @@ export default function PlaylistPage() {
     <>
       <TopBar>
         <h1 className="text-lg font-semibold tracking-tight flex-1">{playlist?.name ?? "Playlist"}</h1>
-        {playlist && <GradientBtn onClick={() => openModal({ type: "addSongs", playlistId: id })}><PlusIcon /> Add songs</GradientBtn>}
+        {playlist && <GradientBtn onClick={() => openModal({ type: "addSongs", playlistId: id })}><PlusIcon /> Edit Playlist</GradientBtn>}
         <PlanChip premium={isPremium} />
       </TopBar>
       <PageBody>

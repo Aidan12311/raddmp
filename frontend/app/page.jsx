@@ -11,11 +11,11 @@ import { TrackList } from "../components/TrackList";
 import { TopBar, PageBody, PlanToggle, GradientBtn, PlusIcon } from "../components/ui";
 
 export default function LibraryPage() {
-  const { library, loading, isPremium, openModal } = usePlayer();
+  const { library, loading, isPremium, openModal, username } = usePlayer();
   return (
     <>
       <TopBar>
-        <h1 className="text-lg font-semibold tracking-tight flex-1">Your Library</h1>
+        <h1 className="text-lg font-semibold tracking-tight flex-1">{username ? `${username}'s Library` : "Your Library"}</h1>
         <GradientBtn onClick={() => openModal({ type: "upload" })}><PlusIcon /> Add song</GradientBtn>
         <PlanToggle premium={isPremium} />
       </TopBar>

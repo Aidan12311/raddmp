@@ -45,7 +45,7 @@ pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, sqs_clie
         username: req.username,
         password: hash(&req.password),
         email: req.email,
-        has_basic_plan: true,
+        has_basic_plan: req.plan != "premium",
         is_verified: false
     };
 
