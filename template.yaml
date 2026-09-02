@@ -592,7 +592,7 @@ Resources:
             Auth:
               Authorizer: RaddAuthorizer
 
-  UdateUserPlan:
+  UpdateUserPlan:
     Type: AWS::Serverless::Function
     Metadata:
       BuildMethod: rust-cargolambda

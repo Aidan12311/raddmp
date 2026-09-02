@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 pub struct RequestBody {
     pub username: String,
     pub password: String,
-    pub email: String
+    pub email: String,
+    pub plan: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

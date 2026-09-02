@@ -12,6 +12,11 @@ pub struct User {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct UpdatePlanRequest {
+    pub plan: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Claims {
     pub sub: String,
     pub tier: String,

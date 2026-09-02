@@ -154,3 +154,9 @@ export const signup = (body) =>
   request("/users", { method: "POST", body: JSON.stringify(body) });
 
 export const getUser = () => request("/users", { method: "GET" });
+
+export const updatePlan = (plan) =>
+    request("/users/update/plan", {
+    method: "POST",
+    body: JSON.stringify({ plan }),
+  });

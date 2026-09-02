@@ -1,12 +1,8 @@
-use std::env;
-
-use lambda_http::{Body, Error, Request, Response};
+use lambda_http::{Body, Error, Request, RequestPayloadExt, Response};
 use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
-use crate::models::{Claims, User};
+use crate::models::{Claims, UpdatePlanRequest};
 use crate::helpers::{text_response, json_response, extract_token_from_cookie};
 use aws_sdk_dynamodb::types::AttributeValue;
-use serde_dynamo::aws_sdk_dynamodb_1::from_item;
-
 
 pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: Request) -> Result<Response<Body>, Error> {
     //check if request contains an auth token
@@ -31,14 +27,27 @@ pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: R
         }
     };
 
+    //validate the request body
+    let req = match event.payload::<UpdatePlanRequest>() {
+        Ok(Some(req)) => req,
+        Ok(None) => return text_response("Request body empty", 400),
+        Err(err) => {
+            println!("{err}");
+            return text_response("internal server error", 500)
+        },
+    };
+
+    let has_basic_plan = req.plan != "premium";
+
     client
         .update_item()
         .table_name("RaddUsersTable")
         .key("id", AttributeValue::S(claims.sub.to_string()))
-        .update_expression("SET has_basic_plan = :premium")
-        .expression_attribute_values(":premium", AttributeValue::Bool(false))
+        .update_expression("SET has_basic_plan = :val")
+        .expression_attribute_values(":val", AttributeValue::Bool(has_basic_plan))
         .send()
         .await?;
 
-    json_response(&"Plan has changed to premium".to_string(), 200)
+    let message = if has_basic_plan { "Plan changed to basic" } else { "Plan changed to premium" };
+    json_response(&message.to_string(), 200)
 }

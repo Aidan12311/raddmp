@@ -11,6 +11,7 @@ export const usePlayer = () => useContext(PlayerContext);
 
 export function PlayerProvider({ children }) {
   const [authed, setAuthed] = useState(false);
+  const [username, setUsername] = useState("");
   const [plan, setPlan] = useState("premium");
   const [library, setLibrary] = useState([]);
   const [playlists, setPlaylists] = useState([]);
@@ -42,42 +43,31 @@ export function PlayerProvider({ children }) {
 
   useEffect(() => {
     let alive = true;
-    (async () => {
-      try {
-        const user = await api.getUser();   // sends cookie automatically via credentials: "include"
-        if (alive) {
-          setPlan(user.has_basic_plan ? "basic" : "premium");
-          setAuthed(true);
-        }
-      } catch {
-        // no valid cookie / expired token — stays on the login screen, which is correct
-      }
-    })();
-    return () => { alive = false; };
-  }, []);
 
-  useEffect(() => {
-    let alive = true;
-    
     (async () => {
-      try {
-        const tracks = await api.listTracks();
+      const [sessionResult, libraryResult] = await Promise.allSettled([
+        api.getUser(),
+        api.listTracks(),
+      ]);
 
-        if(alive) {
-          setLibrary(tracks);
-          // setPlaylists(lists);
-        }
+      if (!alive) return;
+
+      if (sessionResult.status === "fulfilled") {
+        const user = sessionResult.value;
+        setUsername(user.username);
+        setPlan(user.has_basic_plan ? "basic" : "premium");
+        setAuthed(true);
       }
-      catch(e) {
-        console.error("Failed to load library! Error: ", e);
+
+      if (libraryResult.status === "fulfilled") {
+        setLibrary(libraryResult.value);
+      } else {
+        console.error("Failed to load library! Error: ", libraryResult.reason);
       }
-      finally {
-        if (alive) {
-          setLoading(false);
-        }
-      }  
+
+      setLoading(false);
     })();
-  
+
     return () => { alive = false; };
   }, []);
 
@@ -126,25 +116,14 @@ export function PlayerProvider({ children }) {
   };
 
   const handleAuth = async ({ email, password, plan: chosen, mode, username }) => {
-    try {
-      const user = await (mode === "signup"
-        ? api.signup({ email, password, plan: chosen, username })
-        : api.login({ username, password }));
+    await (mode === "signup"
+      ? api.signup({ email, password, plan: chosen, username })
+      : api.login({ username, password }));
 
-      setPlan(user.has_basic_plan ? "basic" : "premium");
-      setAuthed(true);
-    } 
-    catch (err) {
-      if (err.message?.includes("401")) {
-        notify(mode === "signup" ? "Could not create account" : "Invalid username or password");
-      } else if (err.message?.includes("409")) {
-        notify("An account with that username already exists");
-      } else {
-        notify("Something went wrong — please try again");
-      }
-
-      console.error(`${mode} failed: `, err);
-    }
+    const user = await api.getUser();
+    setUsername(user.username);
+    setPlan(user.has_basic_plan ? "basic" : "premium");
+    setAuthed(true);
   };
 
   const playTrack = async (id) => {
@@ -305,18 +284,31 @@ export function PlayerProvider({ children }) {
     })
   };
 
-  const upgrade = () => {
-    setPlan("premium");
-    notify("Upgraded to premium!");
-  }
+  const upgrade = async () => {
+    try {
+      await api.updatePlan("premium");
+      setPlan("premium");
+      notify("Upgraded to premium!");
+    } catch (err) {
+      notify("Failed to upgrade — please try again");
+      console.error("Upgrade failed:", err);
+    }
+  };
 
-  const downgrade = () => {
-    setPlan("basic");
-    notify("Downgraded to basic!");
-  }
+  const downgrade = async () => {
+    try {
+      await api.updatePlan("basic");
+      setPlan("basic");
+      notify("Downgraded to basic!");
+    } catch (err) {
+      notify("Failed to downgrade — please try again");
+      console.error("Downgrade failed:", err);
+    }
+  };
 
 const value = {
     authed, plan, isPremium, loading,
+    username,
     library, playlists,
     current, track, playing, elapsed, seek, duration,
     eq, fx, vol, setVol,
