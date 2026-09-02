@@ -2,6 +2,8 @@ import json
 import os
 import boto3
 
+from cors import resolve_origin
+
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(os.environ["TABLE_NAME"]) # Not done yet
 
@@ -13,20 +15,20 @@ def lambda_handler(event, context):
     music_id = path_params.get("musicId")
 
     if not music_id:
-        return _response(400, {"error": "musicId is required in the path"})
+        return _response(event, 400, {"error": "musicId is required in the path"})
 
     try:
         body = json.loads(event.get("body") or "{}")
     except json.JSONDecodeError:
-        return _response(400, {"error": "Invalid JSON body"})
+        return _response(event, 400, {"error": "Invalid JSON body"})
 
     updates = {k: v for k, v in body.items() if k in UPDATABLE_FIELDS}
     if not updates:
-        return _response(400, {"error": f"No valid fields to update. Allowed: {UPDATABLE_FIELDS}"})
+        return _response(event, 400, {"error": f"No valid fields to update. Allowed: {UPDATABLE_FIELDS}"})
 
     existing = table.get_item(Key={"MusicId": music_id}).get("Item")
     if not existing:
-        return _response(404, {"error": "Music not found"})
+        return _response(event, 404, {"error": "Music not found"})
 
     update_expr_parts = []
     expr_attr_names = {}
@@ -46,15 +48,16 @@ def lambda_handler(event, context):
     )
 
     updated_item = table.get_item(Key={"MusicId": music_id}).get("Item")
-    return _response(200, updated_item)
+    return _response(event, 200, updated_item)
 
-def _response(status_code, body):
+def _response(event, status_code, body):
     return {
         "statusCode": status_code,
         "headers": {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "http://localhost:3000",
+            "Access-Control-Allow-Origin": resolve_origin(event),
             "Access-Control-Allow-Credentials": "true",
+            "Vary": "Origin",
         },
         "body": json.dumps(body),
     }

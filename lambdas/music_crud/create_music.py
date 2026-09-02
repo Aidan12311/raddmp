@@ -3,6 +3,8 @@ import os
 import uuid
 import boto3
 
+from cors import resolve_origin
+
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(os.environ["TABLE_NAME"])  ### Dont Know Yet
 
@@ -13,11 +15,11 @@ def lambda_handler(event, context):
     try:
         body = json.loads(event.get("body") or "{}")
     except json.JSONDecodeError:
-        return _response(400, {"error": "Invalid JSON body"})
+        return _response(event, 400, {"error": "Invalid JSON body"})
 
     missing = [f for f in REQUIRED_FIELDS if f not in body]
     if missing:
-        return _response(400, {"error": f"Missing required fields: {missing}"})
+        return _response(event, 400, {"error": f"Missing required fields: {missing}"})
 
     music_id = str(uuid.uuid4())
     item = {
@@ -31,16 +33,17 @@ def lambda_handler(event, context):
 
     table.put_item(Item=item)
 
-    return _response(201, item)
+    return _response(event, 201, item)
 
 
-def _response(status_code, body):
+def _response(event, status_code, body):
     return {
         "statusCode": status_code,
         "headers": {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "http://localhost:3000",
+            "Access-Control-Allow-Origin": resolve_origin(event),
             "Access-Control-Allow-Credentials": "true",
+            "Vary": "Origin",
         },
         "body": json.dumps(body),
     }

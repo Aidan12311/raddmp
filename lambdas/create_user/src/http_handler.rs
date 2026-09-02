@@ -1,6 +1,6 @@
 use lambda_http::{Body, Error, Request, RequestPayloadExt, Response};
 use lambda_http::http::header::{HeaderValue, SET_COOKIE};
-use crate::helpers::{create_jwt, hash, json_response, text_response};
+use crate::helpers::{create_jwt, hash, json_response, text_response, resolve_cors_origin};
 use crate::models::{QueueMessage, RequestBody, User, ResponseBody};
 use aws_sdk_dynamodb::types::AttributeValue;
 use uuid::Uuid;
@@ -12,24 +12,26 @@ Creates a user in the database
 Takes in a request object like this {username: String, password: String, email: String}
 */
 pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, sqs_client: &aws_sdk_sqs::Client, event: Request) -> Result<Response<Body>, Error> {
-    //validate the request body 
+    let origin = resolve_cors_origin(&event);
+
+    //validate the request body
     let req = match event.payload::<RequestBody>() {
         Ok(Some(req)) => req,
         Ok(None) => {
             let response = ResponseBody{message: "Request body empty".to_string()};
-            return json_response(&response, 400)
+            return json_response(&response, 400, origin)
         },
         Err(err) => {
             println!("{err}");
             let response = ResponseBody{message: "internal server error".to_string()};
-            return json_response(&response, 500)
+            return json_response(&response, 500, origin)
         },
     };
 
     //validate username and password
     if !is_valid_field(&req.email, Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")?) {
         let response = ResponseBody{message: "Incorrect email".to_string()};
-        return json_response(&response, 400)
+        return json_response(&response, 400, origin)
     }
 
     // if !is_valid_field(&req.password, Regex::new(r#"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$"#)?){
@@ -59,7 +61,7 @@ pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, sqs_clie
 
     if !result.items().is_empty() {
         let response = ResponseBody{message: "Username already exists".to_string()};
-            return json_response(&response, 400)
+            return json_response(&response, 400, origin)
     }
 
     //check the database for an existing email
@@ -74,7 +76,7 @@ pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, sqs_clie
 
     if !result.items().is_empty() {
         let response = ResponseBody{message: "Email already exists".to_string()};
-        return json_response(&response, 400)
+        return json_response(&response, 400, origin)
     }
 
     let _result = client
@@ -117,8 +119,9 @@ pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, sqs_clie
     let response = Response::builder()
         .status(201)
         .header("content-type", "application/json")
-        .header("Access-Control-Allow-Origin", "http://localhost:3000")
+        .header("Access-Control-Allow-Origin", origin)
         .header("Access-Control-Allow-Credentials", "true")
+        .header("Vary", "Origin")
         .header(SET_COOKIE, HeaderValue::from_str(&cookie_value)?)
         .body(Body::from(serde_json::to_string(&response_body)?))?;
 

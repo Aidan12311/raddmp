@@ -1,6 +1,6 @@
 use lambda_http::{Body, Error, Request, RequestExt, Response};
 use serde::{Deserialize, Serialize};
-use crate::helpers::{create_dynamo_client, json_response};
+use crate::helpers::{create_dynamo_client, json_response, resolve_cors_origin};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RaddMetrics {
@@ -10,6 +10,7 @@ pub struct RaddMetrics {
 }
 
 pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
+    let origin = resolve_cors_origin(&event);
     let client = create_dynamo_client().await;
 
     let result = client.describe_table().table_name("RaddUsersTable").send().await?;
@@ -22,5 +23,5 @@ pub(crate) async fn function_handler(event: Request) -> Result<Response<Body>, E
     // let mut total_playlists = result.table().and_then(|t| t.item_count()).unwrap_or(0);
     
     let response = RaddMetrics{ total_users, total_songs};
-    json_response(&response, 200)
+    json_response(&response, 200, origin)
 }

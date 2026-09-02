@@ -1,5 +1,5 @@
 use lambda_http::{Body, Error, Request, RequestPayloadExt, Response};
-use crate::helpers::{create_jwt, hash, text_response, json_response};
+use crate::helpers::{create_jwt, hash, text_response, json_response, resolve_cors_origin};
 use crate::models::{RequestBody, User, ResponseBody};
 use lambda_http::http::header::{HeaderValue, SET_COOKIE};
 use aws_sdk_dynamodb::types::AttributeValue;
@@ -10,17 +10,19 @@ Validates if a user exists in the database and returns an auth token
 Takes in a request object like this {username: "", password: ""}
  */
 pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: Request) -> Result<Response<Body>, Error> {
+    let origin = resolve_cors_origin(&event);
+
     //validate the request body isnt empty and has the proper object structure
     let req = match event.payload::<RequestBody>() {
         Ok(Some(req)) => req,
         Ok(None) => {
             let response = ResponseBody{message: "Request body empty".to_string()};
-            return json_response(&response, 400)
+            return json_response(&response, 400, origin)
         },
         Err(err) => {
             println!("{err}");
             let response = ResponseBody{message: "Internal server error".to_string()};
-            return json_response(&response, 500)
+            return json_response(&response, 500, origin)
         },
     };
 
@@ -35,7 +37,7 @@ pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: R
         Some(item) => item.clone(),
         None => {
             let response = ResponseBody{message: "Invalid username".to_string()};
-            return json_response(&response, 400)
+            return json_response(&response, 400, origin)
         },
     };
 
@@ -46,7 +48,7 @@ pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: R
     let hash = hash(&req.password);
     if hash != user.password {
         let response = ResponseBody{message: "Invalid Password".to_string()};
-        return json_response(&response, 400);
+        return json_response(&response, 400, origin);
     }
 
     //generate auth token and send request
@@ -57,8 +59,9 @@ pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: R
     let response = Response::builder()
         .status(200)
         .header("content-type", "application/json")
-        .header("Access-Control-Allow-Origin", "http://localhost:3000")
+        .header("Access-Control-Allow-Origin", origin)
         .header("Access-Control-Allow-Credentials", "true")
+        .header("Vary", "Origin")
         .header(SET_COOKIE, HeaderValue::from_str(&cookie_value)?)
         .body(Body::from(serde_json::to_string(&response_body)?))?;
 

@@ -1,7 +1,7 @@
 use std::env;
 
 use lambda_http::{Body, Error, Request, RequestExt, Response};
-use crate::helpers::{text_response, verify_jwt};
+use crate::helpers::{text_response, verify_jwt, resolve_cors_origin};
 use aws_sdk_dynamodb::{types::AttributeValue};
 
 /*
@@ -9,13 +9,15 @@ Verifies a user in the database
 Takes in a jwt in the route parameters
  */
 pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: Request) -> Result<Response<Body>, Error> {
+    let origin = resolve_cors_origin(&event);
+
     //validate the token is in the route
     let query_params = event.query_string_parameters();
     let token = query_params.first("token").unwrap_or("");
 
     //validate the token isnt empty
     if token.is_empty() {
-        return text_response("missing token", 400);
+        return text_response("missing token", 400, origin);
     }
 
     //decode jwt and validte it matches my claims
@@ -26,7 +28,7 @@ pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: R
         Ok(claims) => claims,
         Err(err) => {
             println!("{err}");
-            return text_response("invalid or expired token", 401);
+            return text_response("invalid or expired token", 401, origin);
         }
     };
 
@@ -40,5 +42,5 @@ pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: R
         .send()
         .await?;
 
-    text_response("verified", 200)
+    text_response("verified", 200, origin)
 }

@@ -20,7 +20,7 @@ Globals:
     Cors:
       AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
       AllowHeaders: "'content-type'"
-      AllowOrigin: "'http://localhost:3000'"
+      AllowOrigin: "'https://main.d3hoq6y7t1r914.amplifyapp.com'"
       AllowCredentials: true
 
 Resources:
@@ -45,7 +45,7 @@ Resources:
       Cors:
         AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
         AllowHeaders: "'content-type'"
-        AllowOrigin: "'http://localhost:3000'"
+        AllowOrigin: "'https://main.d3hoq6y7t1r914.amplifyapp.com'"
         AllowCredentials: true
       Auth:
         Authorizers:
@@ -724,3 +724,4 @@ Outputs:
   ImageBucketName:
     Description: S3 bucket for cover images
     Value: !Ref ImageBucket
+    

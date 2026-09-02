@@ -3,7 +3,7 @@ use std::env;
 use lambda_http::{Body, Error, Request, Response};
 use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
 use crate::models::{Claims, User};
-use crate::helpers::{text_response, json_response, extract_token_from_cookie};
+use crate::helpers::{text_response, json_response, extract_token_from_cookie, resolve_cors_origin};
 use aws_sdk_dynamodb::types::AttributeValue;
 use serde_dynamo::aws_sdk_dynamodb_1::from_item;
 
@@ -12,10 +12,12 @@ Gets a user from the dynamo table
 Uses the auth token to grab the user id
  */
 pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: Request) -> Result<Response<Body>, Error> {
+    let origin = resolve_cors_origin(&event);
+
     //check if request contains an auth token
     let token = match extract_token_from_cookie(&event) {
         Some(t) => t,
-        None => return text_response("Missing auth token", 401),
+        None => return text_response("Missing auth token", 401, origin),
     };
 
     // extract JWT secret from env var
@@ -31,7 +33,7 @@ pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: R
         Ok(data) => data.claims,
         Err(err) => {
             println!("{err}");
-            return text_response("Invalid auth token", 401);
+            return text_response("Invalid auth token", 401, origin);
         }
     };
 
@@ -43,9 +45,9 @@ pub(crate) async fn function_handler(client: &aws_sdk_dynamodb::Client, event: R
     if let Some(item) = result.item {
         //return the user if it did
         let user: User = from_item(item)?;
-        return Ok(json_response(&user, 200)?)
+        return Ok(json_response(&user, 200, origin)?)
     }
-    
+
     //return 404 if the user wasnt found
-    Ok(text_response("User not found please check the id and try again", 404)?)
+    Ok(text_response("User not found please check the id and try again", 404, origin)?)
 }

@@ -3,6 +3,8 @@ import os
 import uuid
 import boto3
 
+from cors import resolve_origin
+
 s3_client = boto3.client("s3")
 
 MP3_BUCKET = os.environ["MP3_BUCKET"]  # Not Done
@@ -20,16 +22,16 @@ def lambda_handler(event, context):
     try:
         body = json.loads(event.get("body") or "{}")
     except json.JSONDecodeError:
-        return _response(400, {"error": "Invalid JSON body"})
+        return _response(event, 400, {"error": "Invalid JSON body"})
 
     file_type = body.get("fileType")
     file_extension = body.get("fileExtension")
 
     if file_type not in VALID_FILE_TYPES:
-        return _response(400, {"error": f"fileType must be one of {list(VALID_FILE_TYPES.keys())}"})
+        return _response(event, 400, {"error": f"fileType must be one of {list(VALID_FILE_TYPES.keys())}"})
 
     if not file_extension:
-        return _response(400, {"error": "fileExtension is required (e.g. 'mp3', 'png', 'jpg')"})
+        return _response(event, 400, {"error": "fileExtension is required (e.g. 'mp3', 'png', 'jpg')"})
 
     bucket = VALID_FILE_TYPES[file_type]["bucket"]
     object_key = f"{file_type}/{uuid.uuid4()}.{file_extension}"
@@ -42,20 +44,21 @@ def lambda_handler(event, context):
 
     final_object_url = f"https://{bucket}.s3.amazonaws.com/{object_key}"
 
-    return _response(200, {
+    return _response(event, 200, {
         "uploadUrl": presigned_url,
         "fileUrl": final_object_url,
         "expiresInSeconds": UPLOAD_EXPIRATION_SECONDS,
     })
 
 
-def _response(status_code, body):
+def _response(event, status_code, body):
     return {
         "statusCode": status_code,
         "headers": {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "http://localhost:3000",
+            "Access-Control-Allow-Origin": resolve_origin(event),
             "Access-Control-Allow-Credentials": "true",
+            "Vary": "Origin",
         },
         "body": json.dumps(body),
     }
